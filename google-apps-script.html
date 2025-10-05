@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Apps Script for Lead Management</title>
+</head>
+<body>
+  <h1>Google Apps Script Code for Lead Management</h1>
+  <p>Copy and paste this code into a new Google Apps Script project:</p>
+  
+  <h2>Instructions:</h2>
+  <ol>
+    <li>Go to <a href="https://script.google.com" target="_blank">script.google.com</a></li>
+    <li>Create a new project</li>
+    <li>Replace the default code with the code below</li>
+    <li>Deploy as a web app with execute permissions set to "Anyone"</li>
+    <li>Copy the web app URL and update the API route</li>
+  </ol>
+
+  <h2>Code.gs:</h2>
+  <pre><code>
+function doPost(e) {
+  try {
+    // Parse the incoming data
+    const data = JSON.parse(e.postData.contents);
+    
+    // Get the spreadsheet
+    const spreadsheetId = '1ipsWabylSSq1m8GjO1lcyajjqFAqZ4BXoxYBEcRJDUE';
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName('Leads');
+    
+    // Prepare the row data to match the Leads tab structure
+    const rowData = [
+      data.lead_id || '',
+      data.project_id || '',
+      data.name || '',
+      data.email || '',
+      data.company || '',
+      data.position || '',
+      data.source || 'Manual Entry',
+      data.status || 'Active',
+      data.phone || '',
+      data.website || '',
+      data.address || '',
+      data.rating || '',
+      data.scraped_at || new Date().toISOString(),
+      data.error || ''
+    ];
+    
+    // Append the row to the sheet
+    sheet.appendRow(rowData);
+    
+    // Return success response
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: true,
+        message: 'Lead added successfully',
+        lead_id: data.lead_id
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    // Return error response
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: false,
+        error: error.toString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      message: 'Lead Management Web App is running',
+      timestamp: new Date().toISOString()
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+  </code></pre>
+
+  <h2>After deploying:</h2>
+  <p>Update the webhook URL in your API route to use the deployed Google Apps Script URL instead of the n8n webhook.</p>
+</body>
+</html>
