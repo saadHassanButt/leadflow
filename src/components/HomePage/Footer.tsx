@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Mail, Phone, MapPin, Twitter, Linkedin, Github } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 const footerLinks = {
   Product: [
@@ -138,9 +139,13 @@ export const Footer: React.FC = () => {
                 placeholder="Enter your email"
                 className="flex-1 md:w-80 px-4 py-3 rounded-l-lg bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
-              <button className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-r-lg font-medium transition-colors">
+              <Button 
+                variant="primary"
+                size="md"
+                className="px-6 py-3 rounded-r-lg rounded-l-none"
+              >
                 Subscribe
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>

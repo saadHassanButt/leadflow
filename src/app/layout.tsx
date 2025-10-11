@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SmoothScrollProvider } from "@/components/Providers/SmoothScrollProvider";
+import { HeaderWrapper } from "@/components/layout/HeaderWrapper";
 import AuthDebug from "@/components/debug/AuthDebug";
 
 const inter = Inter({
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className="font-sans antialiased" suppressHydrationWarning={true}>
         <SmoothScrollProvider>
           <AuthProvider>
+            <HeaderWrapper />
             {children}
             <AuthDebug />
           </AuthProvider>

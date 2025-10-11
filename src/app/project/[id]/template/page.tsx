@@ -6,6 +6,7 @@ import { ArrowRight, Mail, Edit3, Sparkles } from 'lucide-react';
 import { Button, Stepper, Input } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { PROJECT_STEPS } from '@/lib/constants';
+import { StepNavigation } from '@/components/project/step-navigation';
 import { apiClient } from '@/lib/api';
 
 export default function TemplatePage() {
@@ -203,32 +204,26 @@ export default function TemplatePage() {
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      {/* Header */}
-      <header className="bg-neutral-800 border-b border-neutral-700">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Email Template</h1>
-              <p className="text-neutral-300 mt-1">Create personalized email templates for your campaign</p>
-            </div>
-            <Stepper steps={PROJECT_STEPS} currentStep={1} className="hidden md:flex" />
-          </div>
+      {/* Page Header */}
+      <div className="w-full py-12">
+        <div className="flex items-center justify-center">
+          <StepNavigation className="hidden md:flex" />
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="container-custom py-8">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Generate Template Section */}
           {!template.content && (
-            <div className="card p-12 text-center">
+            <div className="bg-neutral-800 rounded-xl p-12 text-center border border-neutral-700">
               <div className="w-16 h-16 bg-accent-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Sparkles className="w-8 h-8 text-accent-600" />
               </div>
-              <h3 className="text-xl font-semibold text-neutral-900 mb-3">
+              <h3 className="text-xl font-semibold text-white mb-3">
                 Generate AI-Powered Email Template
               </h3>
-              <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+              <p className="text-neutral-300 mb-6 max-w-md mx-auto">
                 Let our AI create a personalized email template optimized for your {project?.niche} industry campaign
               </p>
               <Button
@@ -244,13 +239,13 @@ export default function TemplatePage() {
 
           {/* Template Editor */}
           {template.content && (
-            <div className="card p-6">
+            <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-neutral-900">
+                  <h3 className="text-lg font-semibold text-white">
                     Email Template
                   </h3>
-                  <p className="text-sm text-neutral-600">
+                  <p className="text-sm text-neutral-300">
                     Review and customize your email template
                   </p>
                 </div>
@@ -298,7 +293,7 @@ export default function TemplatePage() {
               <div className="space-y-6">
                 {/* Subject Line */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Subject Line
                   </label>
                   {isEditing ? (
@@ -308,15 +303,15 @@ export default function TemplatePage() {
                       placeholder="Enter email subject..."
                     />
                   ) : (
-                    <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-200">
-                      <p className="font-medium text-neutral-900">{template.subject}</p>
+                    <div className="p-3 bg-neutral-700 rounded-lg border border-neutral-600">
+                      <p className="font-medium text-white">{template.subject}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Email Content */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium text-white mb-2">
                     Email Content
                   </label>
                   {isEditing ? (
@@ -328,8 +323,8 @@ export default function TemplatePage() {
                       placeholder="Enter email content..."
                     />
                   ) : (
-                    <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                      <pre className="whitespace-pre-wrap font-sans text-neutral-900 leading-relaxed">
+                    <div className="p-4 bg-neutral-700 rounded-lg border border-neutral-600">
+                      <pre className="whitespace-pre-wrap font-sans text-white leading-relaxed">
                         {template.content}
                       </pre>
                     </div>
@@ -337,54 +332,54 @@ export default function TemplatePage() {
                 </div>
 
                 {/* Template Variables */}
-                <div className="bg-primary-50 rounded-xl p-4 border border-primary-200">
-                  <h4 className="font-medium text-primary-900 mb-3">Available Variables</h4>
+                <div className="bg-primary-900/20 rounded-xl p-4 border border-primary-500/30">
+                  <h4 className="font-medium text-primary-300 mb-3">Available Variables</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div className="flex items-center space-x-2">
-                      <code className="px-2 py-1 bg-white rounded text-primary-700 font-mono">
+                      <code className="px-2 py-1 bg-neutral-800 rounded text-primary-300 font-mono">
                         {`{{firstName}}`}
                       </code>
-                      <span className="text-primary-700">First Name</span>
+                      <span className="text-neutral-300">First Name</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <code className="px-2 py-1 bg-white rounded text-primary-700 font-mono">
+                      <code className="px-2 py-1 bg-neutral-800 rounded text-primary-300 font-mono">
                         {`{{lastName}}`}
                       </code>
-                      <span className="text-primary-700">Last Name</span>
+                      <span className="text-neutral-300">Last Name</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <code className="px-2 py-1 bg-white rounded text-primary-700 font-mono">
+                      <code className="px-2 py-1 bg-neutral-800 rounded text-primary-300 font-mono">
                         {`{{company}}`}
                       </code>
-                      <span className="text-primary-700">Company</span>
+                      <span className="text-neutral-300">Company</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <code className="px-2 py-1 bg-white rounded text-primary-700 font-mono">
+                      <code className="px-2 py-1 bg-neutral-800 rounded text-primary-300 font-mono">
                         {`{{title}}`}
                       </code>
-                      <span className="text-primary-700">Job Title</span>
+                      <span className="text-neutral-300">Job Title</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Preview */}
                 <div>
-                  <h4 className="font-medium text-neutral-900 mb-3">Preview</h4>
-                  <div className="card p-4 bg-white">
-                    <div className="border-b border-neutral-200 pb-3 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-neutral-600">
+                  <h4 className="font-medium text-white mb-3">Preview</h4>
+                  <div className="bg-neutral-700 rounded-xl p-4 border border-neutral-600">
+                    <div className="border-b border-neutral-600 pb-3 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-neutral-300">
                         <Mail className="w-4 h-4" />
                         <span>From: {project?.companyEmail}</span>
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-neutral-600 mt-1">
+                      <div className="flex items-center space-x-2 text-sm text-neutral-300 mt-1">
                         <span>To: john.doe@example.com</span>
                       </div>
                       <div className="mt-2">
-                        <p className="font-medium text-neutral-900">{template.subject}</p>
+                        <p className="font-medium text-white">{template.subject}</p>
                       </div>
                     </div>
                     <div className="prose max-w-none">
-                      <pre className="whitespace-pre-wrap font-sans text-neutral-900 leading-relaxed">
+                      <pre className="whitespace-pre-wrap font-sans text-white leading-relaxed">
                         {template.content}
                       </pre>
                     </div>

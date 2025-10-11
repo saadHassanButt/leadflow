@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const n8nBaseUrl = 'http://192.168.18.180:5678';
     
     try {
-      const webhookResponse = await fetch(`${n8nBaseUrl}/webhook-test/fetch-stats`, {
+      const webhookResponse = await fetch(`${n8nBaseUrl}/webhook/fetch-stats`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

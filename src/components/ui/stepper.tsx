@@ -15,18 +15,18 @@ interface StepperProps {
 
 export function Stepper({ steps, currentStep, className }: StepperProps) {
   return (
-    <nav className={clsx('w-full', className)}>
-      <ol className="flex items-center justify-between">
+    <nav className={clsx('bg-transparent', className)}>
+      <ol className="flex items-center bg-transparent">
         {steps.map((step, stepIdx) => (
-          <li key={step.id} className="flex items-center flex-1">
-            <div className="flex items-center">
+          <li key={step.id} className="flex items-center bg-transparent">
+            <div className="flex items-center bg-transparent">
               <div className={clsx(
-                'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-medium',
+                'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-medium relative',
                 stepIdx < currentStep
-                  ? 'bg-primary-500 border-primary-500 text-white'
+                  ? 'bg-orange-500 border-orange-500 text-white'
                   : stepIdx === currentStep
-                  ? 'border-primary-500 text-primary-500 bg-white'
-                  : 'border-neutral-300 text-neutral-400 bg-white'
+                  ? 'border-orange-500 text-orange-500 bg-neutral-900'
+                  : 'border-neutral-600 text-neutral-400 bg-neutral-900'
               )}>
                 {stepIdx < currentStep ? (
                   <Check className="w-5 h-5" />
@@ -34,22 +34,22 @@ export function Stepper({ steps, currentStep, className }: StepperProps) {
                   <span>{stepIdx + 1}</span>
                 )}
               </div>
-              <div className="ml-3">
+              <div className="ml-3 bg-transparent">
                 <p className={clsx(
-                  'text-sm font-medium',
-                  stepIdx <= currentStep ? 'text-neutral-900' : 'text-neutral-400'
+                  'text-sm font-medium bg-transparent',
+                  stepIdx <= currentStep ? 'text-white' : 'text-neutral-400'
                 )}>
                   {step.name}
                 </p>
                 {step.description && (
-                  <p className="text-xs text-neutral-500">{step.description}</p>
+                  <p className="text-xs text-neutral-300 bg-transparent">{step.description}</p>
                 )}
               </div>
             </div>
             {stepIdx < steps.length - 1 && (
               <div className={clsx(
-                'flex-1 h-0.5 mx-4',
-                stepIdx < currentStep ? 'bg-primary-500' : 'bg-neutral-200'
+                'h-0.5 w-16 mx-6',
+                stepIdx < currentStep ? 'bg-orange-500' : 'bg-neutral-600'
               )} />
             )}
           </li>

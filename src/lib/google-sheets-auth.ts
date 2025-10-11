@@ -6,7 +6,7 @@ const GOOGLE_SHEETS_DOCUMENT_ID = '1ipsWabylSSq1m8GjO1lcyajjqFAqZ4BXoxYBEcRJDUE'
 // For now, we'll use a webhook approach that you can set up in n8n
 // This is the most reliable way to handle Google Sheets integration
 class GoogleSheetsAuthService {
-  private webhookUrl = 'http://192.168.18.180:5678/webhook-test/google-sheets';
+  private webhookUrl = 'http://192.168.18.180:5678/webhook/google-sheets';
 
   // Add lead via webhook (most reliable method)
   async addLead(lead: any): Promise<boolean> {

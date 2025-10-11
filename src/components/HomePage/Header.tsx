@@ -89,16 +89,17 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             className="md:hidden p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
+            icon={isMobileMenuOpen ? (
               <X className={`w-6 h-6 ${isScrolled ? 'text-dark-900' : 'text-white'}`} />
             ) : (
               <Menu className={`w-6 h-6 ${isScrolled ? 'text-dark-900' : 'text-white'}`} />
             )}
-          </button>
+          />
         </div>
 
         {/* Mobile Menu */}

@@ -754,6 +754,42 @@ class GoogleOAuthDirectService {
     }
   }
 
+  // Get all projects from the Projects tab
+  async getProjects(): Promise<any[]> {
+    try {
+      console.log('Fetching projects from Google Sheets...');
+      const response = await this.makeAuthenticatedRequest('/values/Projects!A2:Z');
+      
+      console.log('Google Sheets projects response:', {
+        hasValues: !!response.values,
+        valuesLength: response.values?.length || 0,
+        firstRow: response.values?.[0] || 'No rows'
+      });
+      
+      if (!response.values || response.values.length === 0) {
+        console.log('No projects found in Google Sheets');
+        return [];
+      }
+
+      return response.values
+        .filter((row: string[]) => row.length >= 3 && row[0] && row[2]) // project_id and company_name
+        .map((row: string[]) => ({
+          project_id: row[0] || '',
+          user_id: row[1] || '',
+          company_name: row[2] || '',
+          niche: row[3] || '',
+          no_of_leads: parseInt(row[4]) || 0,
+          status: row[5] || 'Created',
+          created_at: row[6] || '',
+          error: row[7] || '',
+          // Add any additional fields based on your Projects sheet structure
+        }));
+    } catch (error) {
+      console.error('Error fetching projects from Google Sheets:', error);
+      return [];
+    }
+  }
+
   // Clear stored tokens (logout)
   clearTokens(): void {
     this.accessToken = null;

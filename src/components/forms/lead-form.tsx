@@ -123,7 +123,7 @@ export function LeadForm({ initialData, onSave, onCancel }: LeadFormProps) {
           <select
             value={formData.source}
             onChange={(e) => handleInputChange('source', e.target.value)}
-            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-gray-900 bg-white"
           >
             <option value="Manual Entry">Manual Entry</option>
             <option value="Generated Lead">Generated Lead</option>
@@ -142,7 +142,7 @@ export function LeadForm({ initialData, onSave, onCancel }: LeadFormProps) {
           <select
             value={formData.status}
             onChange={(e) => handleInputChange('status', e.target.value)}
-            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-gray-900 bg-white"
           >
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>

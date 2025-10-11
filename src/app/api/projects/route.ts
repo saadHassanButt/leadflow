@@ -1,109 +1,73 @@
-// src/app/api/projects/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { googleSheetsService, GoogleSheetsProject } from '@/lib/google-sheets';
+import { googleOAuthDirectService } from '@/lib/google-oauth-direct';
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch all projects from Google Sheets
-    const projects = await googleSheetsService.getProjects();
-
-    return NextResponse.json({
-      success: true,
-      data: projects,
-      count: projects.length
-    });
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch projects' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { user_id, company_name, niche, no_of_leads = 0 } = body;
-
-    if (!user_id || !company_name || !niche) {
-      return NextResponse.json(
-        { error: 'user_id, company_name, and niche are required' },
-        { status: 400 }
-      );
-    }
-
-    // Generate a new project ID
-    const projectId = `${company_name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
-
-    const newProject: GoogleSheetsProject = {
-      project_id: projectId,
-      user_id,
-      company_name,
-      niche,
-      no_of_leads,
-      status: 'Created',
-      created_at: new Date().toISOString()
-    };
-
-    // Add project to Google Sheets using the service
-    const success = await googleSheetsService.addProject(newProject);
+    console.log('=== PROJECTS API ROUTE ===');
     
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to add project to Google Sheets' },
-        { status: 500 }
-      );
+    // Get authentication tokens from headers
+    const accessToken = request.headers.get('x-google-access-token');
+    const refreshToken = request.headers.get('x-google-refresh-token');
+    const tokenExpiry = request.headers.get('x-google-token-expiry');
+
+    if (!accessToken || !refreshToken || !tokenExpiry) {
+      return NextResponse.json({
+        success: false,
+        error: 'Not authenticated with Google Sheets',
+        authUrl: googleOAuthDirectService.getAuthUrl('')
+      }, { status: 401 });
     }
 
-    console.log('New project created and added to Google Sheets:', newProject);
-
-    return NextResponse.json({
-      success: true,
-      data: newProject
-    });
-  } catch (error) {
-    console.error('Error creating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { project_id, lead_count } = body;
-
-    if (!project_id || lead_count === undefined) {
-      return NextResponse.json(
-        { error: 'project_id and lead_count are required' },
-        { status: 400 }
-      );
+    // Check if token is expired
+    const expiryTime = parseInt(tokenExpiry);
+    if (Date.now() >= expiryTime) {
+      return NextResponse.json({
+        success: false,
+        error: 'Token expired, please re-authenticate',
+        authUrl: googleOAuthDirectService.getAuthUrl('')
+      }, { status: 401 });
     }
 
-    // Update project lead count in Google Sheets
-    const success = await googleSheetsService.updateProjectLeadCount(project_id, lead_count);
+    // Load tokens into the service
+    console.log('Loading tokens into service...');
+    const tokensLoaded = googleOAuthDirectService.loadTokensFromHeaders(request);
+    console.log('Tokens loaded successfully:', tokensLoaded);
+
+    // Fetch projects from Google Sheets
+    console.log('Fetching projects from Google Sheets...');
+    const projects = await googleOAuthDirectService.getProjects();
+
+    // Fetch leads to get accurate lead counts for each project
+    console.log('Fetching leads to calculate accurate lead counts...');
+    const allLeads = await googleOAuthDirectService.getLeads();
     
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to update project lead count in Google Sheets' },
-        { status: 500 }
-      );
-    }
+    // Calculate lead counts for each project
+    const projectsWithLeadCounts = projects.map(project => {
+      const projectLeads = allLeads.filter(lead => lead.project_id === project.project_id);
+      return {
+        ...project,
+        leads_count: projectLeads.length
+      };
+    });
 
-    console.log('Project lead count updated in Google Sheets:', project_id, lead_count);
+    console.log(`Successfully fetched ${projectsWithLeadCounts.length} projects with lead counts`);
 
     return NextResponse.json({
       success: true,
-      message: 'Project lead count updated successfully'
+      data: projectsWithLeadCounts
     });
+
   } catch (error) {
-    console.error('Error updating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    );
+    console.error('Error in projects API route:', error);
+    
+    let errorMessage = 'Failed to fetch projects';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: errorMessage
+    }, { status: 500 });
   }
 }

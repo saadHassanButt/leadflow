@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { Button } from '@/components/ui';
 
 export default function AuthDebug() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -84,12 +85,14 @@ export default function AuthDebug() {
       </div>
       
       {needsReAuth && (
-        <button
+        <Button
           onClick={handleReAuthenticate}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-xs font-medium transition-colors"
+          variant="primary"
+          size="sm"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-xs"
         >
           🔑 Re-authenticate
-        </button>
+        </Button>
       )}
       
       {!needsReAuth && (

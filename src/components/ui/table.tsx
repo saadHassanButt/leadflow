@@ -21,14 +21,14 @@ export function Table<T extends Record<string, any>>({
   onRowClick 
 }: TableProps<T>) {
   return (
-    <div className={clsx('overflow-hidden rounded-xl border border-neutral-200', className)}>
-      <table className="min-w-full divide-y divide-neutral-200">
-        <thead className="bg-neutral-50">
+    <div className={clsx('overflow-hidden rounded-xl border border-neutral-700', className)}>
+      <table className="min-w-full divide-y divide-neutral-700">
+        <thead className="bg-neutral-800">
           <tr>
             {columns.map((column) => (
               <th
                 key={String(column.key)}
-                className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-neutral-300 uppercase tracking-wider"
                 style={{ width: column.width }}
               >
                 {column.header}
@@ -36,18 +36,18 @@ export function Table<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-neutral-200">
+        <tbody className="bg-neutral-800 divide-y divide-neutral-700">
           {data.map((row, rowIndex) => (
             <tr
               key={rowIndex}
               className={clsx(
-                'hover:bg-neutral-50 transition-colors duration-150',
+                'hover:bg-neutral-700 transition-colors duration-150',
                 onRowClick && 'cursor-pointer'
               )}
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((column) => (
-                <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
+                <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap text-sm text-white">
                   {column.render ? column.render(row[column.key], row) : row[column.key]}
                 </td>
               ))}

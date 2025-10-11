@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { colors, zIndex } from './design-tokens';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -107,12 +108,13 @@ export const Modal: React.FC<ModalProps> = ({
                   )}
                 </div>
                 
-                <button
+                <Button
                   onClick={onClose}
-                  className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200"
+                  icon={<X className="w-5 h-5" />}
+                />
               </div>
             )}
 

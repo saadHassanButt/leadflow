@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Target, Mail, BarChart3, Users, Zap, ArrowRight, CheckCircle, Star, Play } from 'lucide-react';
+import { Plus, Target, Mail, BarChart3, Users, Zap, ArrowRight, CheckCircle, Star, Play, X } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export default function HomePage() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function HomePage() {
       // Call n8n webhook
       // IP address of the laptop running n8n workflow
       const n8nBaseUrl = 'http://192.168.18.180:5678';
-      const response = await fetch(`${n8nBaseUrl}/webhook-test/create-project`, {
+      const response = await fetch(`${n8nBaseUrl}/webhook/create-project`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,40 +144,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800 shadow-lg border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-white">LeadFlow</span>
-            </div>
-            
-            <nav className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="font-medium text-white hover:text-orange-500 transition-colors">Features</a>
-              <a href="#how-it-works" className="font-medium text-white hover:text-orange-500 transition-colors">How it Works</a>
-              <a href="#testimonials" className="font-medium text-white hover:text-orange-500 transition-colors">Testimonials</a>
-            </nav>
-            
-            <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 text-gray-300 hover:text-white transition-colors">Sign In</button>
-              <button 
-                onClick={() => setIsCreateModalOpen(true)}
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <main id="get-started" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center max-w-4xl mx-auto">
           {/* Badge */}
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-medium border border-orange-200 mb-8">
@@ -202,15 +171,21 @@ export default function HomePage() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <button 
+            <Button 
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-8 py-4 bg-orange-500 text-white text-lg font-medium rounded-lg hover:bg-orange-600 transition-colors"
+              variant="primary"
+              size="lg"
+              className="px-8 py-4 text-lg"
             >
               Create Your First Project
-            </button>
-            <button className="px-8 py-4 border-2 border-orange-500 text-orange-500 text-lg font-medium rounded-lg hover:bg-orange-500 hover:text-white transition-colors">
+            </Button>
+            <Button 
+              variant="secondary"
+              size="lg"
+              className="px-8 py-4 text-lg border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
+            >
               Watch Demo
-            </button>
+            </Button>
           </div>
 
           {/* Stats */}
@@ -305,15 +280,21 @@ export default function HomePage() {
             their sales pipeline and book more meetings.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
+            <Button 
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-8 py-4 bg-white text-orange-600 text-lg font-medium rounded-lg hover:bg-orange-50 transition-colors"
+              variant="secondary"
+              size="lg"
+              className="px-8 py-4 text-lg bg-white text-orange-600 hover:bg-orange-50"
             >
               Start Your Free Trial
-            </button>
-            <button className="px-8 py-4 border-2 border-white text-white text-lg font-medium rounded-lg hover:bg-white/10 transition-colors">
+            </Button>
+            <Button 
+              variant="ghost"
+              size="lg"
+              className="px-8 py-4 text-lg border-2 border-white text-white hover:bg-white/10"
+            >
               Schedule Demo
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -344,15 +325,14 @@ export default function HomePage() {
                 <h3 className="text-2xl font-bold text-gray-900">Create New Project</h3>
                 <p className="text-gray-600 mt-1">Start your lead generation campaign in minutes</p>
               </div>
-              <button
+              <Button
                 onClick={handleModalClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-gray-100 text-gray-500"
                 disabled={isCreating}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                icon={<X className="w-6 h-6" />}
+              />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -527,39 +507,27 @@ export default function HomePage() {
               )}
 
               <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                <button
+                <Button
                   type="button"
                   onClick={handleModalClose}
-                  className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  variant="secondary"
+                  size="md"
+                  className="px-8 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50"
                   disabled={isCreating}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="px-8 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  variant="primary"
+                  size="md"
+                  className="px-8 py-3"
                   disabled={isCreating}
+                  loading={isCreating}
+                  icon={webhookStatus === 'success' ? <CheckCircle className="w-4 h-4" /> : <Target className="w-4 h-4" />}
                 >
-                  {isCreating ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating Project...
-                    </>
-                  ) : webhookStatus === 'success' ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Project Created!
-                    </>
-                  ) : (
-                    <>
-                      <Target className="w-4 h-4 mr-2" />
-                      Create Project
-                    </>
-                  )}
-                </button>
+                  {isCreating ? 'Creating Project...' : webhookStatus === 'success' ? 'Project Created!' : 'Create Project'}
+                </Button>
               </div>
             </form>
           </div>

@@ -23,6 +23,7 @@ import { useProject } from '@/lib/hooks/use-project';
 import { useLeads } from '@/lib/hooks/use-leads';
 import { mailgunService, MailgunStats } from '@/lib/mailgun';
 import { ProjectAnalytics, GoogleSheetsCampaignStats } from '@/types/mailgun';
+import { BarChart, PieChart, DonutChart, ProgressBar, LineChart } from '@/components/charts';
 
 export default function DashboardPage() {
   const params = useParams();
@@ -266,24 +267,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      {/* Header */}
-      <header className="bg-neutral-800 border-b border-neutral-700">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => router.push(`/project/${projectId}`)}
-                icon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Back to Project
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Project Dashboard</h1>
-                <p className="text-neutral-300 mt-1">{analytics.project_name}</p>
-              </div>
-            </div>
+      {/* Page Header */}
+      <div className="w-full py-12">
+        <div className="flex items-center justify-center relative max-w-7xl mx-auto px-8">
+          <div className="absolute right-8">
             <Button
               variant="secondary"
               onClick={fetchAnalytics}
@@ -294,7 +281,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="container-custom py-8">
@@ -309,21 +296,30 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-2xl font-bold text-white">{analytics.leads.total}</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Total Leads</h3>
-              <div className="space-y-2 text-sm text-neutral-300">
-                <div className="flex justify-between">
-                  <span>Validated:</span>
-                  <span className="text-green-400">{analytics.leads.validated}</span>
+              <h3 className="text-lg font-semibold text-white mb-4">Total Leads</h3>
+              
+              {analytics.leads.total > 0 ? (
+                <DonutChart
+                  data={[
+                    { label: 'Deliverable', value: analytics.leads.deliverable, color: '#10b981' },
+                    { label: 'Undeliverable', value: analytics.leads.undeliverable, color: '#ef4444' },
+                    { label: 'Risky', value: analytics.leads.risky, color: '#f59e0b' },
+                    { label: 'Not Validated', value: analytics.leads.total - analytics.leads.validated, color: '#6b7280' }
+                  ].filter(item => item.value > 0)}
+                  size={100}
+                  strokeWidth={12}
+                  centerContent={
+                    <div className="text-center">
+                      <div className="text-sm font-bold text-white">{analytics.leads.validated}</div>
+                      <div className="text-xs text-neutral-300">Validated</div>
+                    </div>
+                  }
+                />
+              ) : (
+                <div className="text-center py-4 text-neutral-400 text-sm">
+                  No leads data available
                 </div>
-                <div className="flex justify-between">
-                  <span>Deliverable:</span>
-                  <span className="text-green-400">{analytics.leads.deliverable}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Undeliverable:</span>
-                  <span className="text-red-400">{analytics.leads.undeliverable}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Templates Card */}
@@ -334,17 +330,21 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-2xl font-bold text-white">{analytics.templates.total}</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Email Templates</h3>
-              <div className="space-y-2 text-sm text-neutral-300">
-                <div className="flex justify-between">
-                  <span>Generated:</span>
-                  <span className="text-blue-400">{analytics.templates.generated}</span>
+              <h3 className="text-lg font-semibold text-white mb-4">Email Templates</h3>
+              
+              {analytics.templates.total > 0 ? (
+                <BarChart
+                  data={[
+                    { label: 'Generated', value: analytics.templates.generated, color: '#3b82f6' },
+                    { label: 'Edited', value: analytics.templates.edited, color: '#f97316' }
+                  ]}
+                  height={80}
+                />
+              ) : (
+                <div className="text-center py-4 text-neutral-400 text-sm">
+                  No templates created yet
                 </div>
-                <div className="flex justify-between">
-                  <span>Edited:</span>
-                  <span className="text-orange-400">{analytics.templates.edited}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Campaigns Card */}
@@ -355,16 +355,25 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-2xl font-bold text-white">{analytics.campaigns.total}</span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Campaigns</h3>
-              <div className="space-y-2 text-sm text-neutral-300">
-                <div className="flex justify-between">
-                  <span>Active:</span>
-                  <span className="text-green-400">{analytics.campaigns.active}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Completed:</span>
-                  <span className="text-blue-400">{analytics.campaigns.completed}</span>
-                </div>
+              <h3 className="text-lg font-semibold text-white mb-4">Campaigns</h3>
+              
+              <div className="space-y-3">
+                <ProgressBar
+                  label="Active Campaigns"
+                  value={analytics.campaigns.active}
+                  max={Math.max(analytics.campaigns.total, 1)}
+                  color="#10b981"
+                  showValue
+                  height={6}
+                />
+                <ProgressBar
+                  label="Completed"
+                  value={analytics.campaigns.completed}
+                  max={Math.max(analytics.campaigns.total, 1)}
+                  color="#3b82f6"
+                  showValue
+                  height={6}
+                />
               </div>
             </div>
 
@@ -378,16 +387,30 @@ export default function DashboardPage() {
                   {Math.round(analytics.performance_metrics.delivery_rate)}%
                 </span>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Delivery Rate</h3>
-              <div className="space-y-2 text-sm text-neutral-300">
-                <div className="flex justify-between">
-                  <span>Open Rate:</span>
-                  <span className="text-green-400">{Math.round(analytics.performance_metrics.open_rate)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Click Rate:</span>
-                  <span className="text-blue-400">{Math.round(analytics.performance_metrics.click_rate)}%</span>
-                </div>
+              <h3 className="text-lg font-semibold text-white mb-4">Performance Metrics</h3>
+              
+              <div className="space-y-3">
+                <ProgressBar
+                  label="Delivery Rate"
+                  value={analytics.performance_metrics.delivery_rate}
+                  max={100}
+                  color="#f97316"
+                  height={6}
+                />
+                <ProgressBar
+                  label="Open Rate"
+                  value={analytics.performance_metrics.open_rate}
+                  max={100}
+                  color="#10b981"
+                  height={6}
+                />
+                <ProgressBar
+                  label="Click Rate"
+                  value={analytics.performance_metrics.click_rate}
+                  max={100}
+                  color="#3b82f6"
+                  height={6}
+                />
               </div>
             </div>
           </div>
@@ -401,78 +424,105 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* Mailgun Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-3xl font-bold text-green-600">{analytics.mailgun_stats.accepted}</div>
-                <div className="text-sm text-green-700 font-medium">Accepted</div>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <div className="text-3xl font-bold text-blue-600">{analytics.mailgun_stats.delivered}</div>
-                <div className="text-sm text-blue-700 font-medium">Delivered</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-xl border border-orange-200">
-                <div className="text-3xl font-bold text-orange-600">{analytics.mailgun_stats.failed}</div>
-                <div className="text-sm text-orange-700 font-medium">Failed</div>
-              </div>
-              <div className="text-center p-4 bg-teal-50 rounded-xl border border-teal-200">
-                <div className="text-3xl font-bold text-teal-600">{analytics.mailgun_stats.opened}</div>
-                <div className="text-sm text-teal-700 font-medium">Opened</div>
-              </div>
+            {/* Email Delivery Chart */}
+            <div className="mb-6">
+              {analytics.mailgun_stats.total > 0 ? (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-white mb-4">Email Flow Progression</h4>
+                    <LineChart
+                      data={[
+                        { label: 'Accepted', value: analytics.mailgun_stats.accepted },
+                        { label: 'Delivered', value: analytics.mailgun_stats.delivered },
+                        { label: 'Opened', value: analytics.mailgun_stats.opened },
+                        { label: 'Clicked', value: analytics.mailgun_stats.clicked }
+                      ]}
+                      height={150}
+                      color="#3b82f6"
+                      showGrid={true}
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white mb-4">Performance Rates</h4>
+                    <LineChart
+                      data={[
+                        { label: 'Delivery', value: Math.round(analytics.performance_metrics.delivery_rate) },
+                        { label: 'Open', value: Math.round(analytics.performance_metrics.open_rate) },
+                        { label: 'Click', value: Math.round(analytics.performance_metrics.click_rate) },
+                        { label: 'Bounce', value: Math.round(analytics.performance_metrics.bounce_rate) }
+                      ]}
+                      height={150}
+                      color="#10b981"
+                      showGrid={true}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-neutral-400 text-sm">No email statistics available</div>
+                </div>
+              )}
             </div>
 
             {/* Additional Metrics */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h4 className="font-medium text-white">Performance Metrics</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Delivery Rate:</span>
-                    <span className="font-medium text-white">
-                      {Math.round(analytics.performance_metrics.delivery_rate)}%
-                    </span>
+                {analytics.mailgun_stats.total > 0 ? (
+                  <div className="space-y-3">
+                    <ProgressBar
+                      label="Delivery Rate"
+                      value={analytics.performance_metrics.delivery_rate}
+                      max={100}
+                      color="#f97316"
+                      height={8}
+                    />
+                    <ProgressBar
+                      label="Open Rate"
+                      value={analytics.performance_metrics.open_rate}
+                      max={100}
+                      color="#10b981"
+                      height={8}
+                    />
+                    <ProgressBar
+                      label="Click Rate"
+                      value={analytics.performance_metrics.click_rate}
+                      max={100}
+                      color="#3b82f6"
+                      height={8}
+                    />
+                    <ProgressBar
+                      label="Bounce Rate"
+                      value={analytics.performance_metrics.bounce_rate}
+                      max={100}
+                      color="#ef4444"
+                      height={8}
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Open Rate:</span>
-                    <span className="font-medium text-white">
-                      {Math.round(analytics.performance_metrics.open_rate)}%
-                    </span>
+                ) : (
+                  <div className="text-center py-8 text-neutral-400 text-sm">
+                    No performance data available
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Click Rate:</span>
-                    <span className="font-medium text-white">
-                      {Math.round(analytics.performance_metrics.click_rate)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Bounce Rate:</span>
-                    <span className="font-medium text-red-400">
-                      {Math.round(analytics.performance_metrics.bounce_rate)}%
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4">
                 <h4 className="font-medium text-white">Engagement Metrics</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Clicked:</span>
-                    <span className="font-medium text-blue-400">{analytics.mailgun_stats.clicked}</span>
+                {analytics.mailgun_stats.total > 0 ? (
+                  <BarChart
+                    data={[
+                      { label: 'Clicked', value: analytics.mailgun_stats.clicked, color: '#3b82f6' },
+                      { label: 'Complained', value: analytics.mailgun_stats.complained, color: '#f59e0b' },
+                      { label: 'Unsubscribed', value: analytics.mailgun_stats.unsubscribed, color: '#ef4444' },
+                      { label: 'Total Events', value: analytics.mailgun_stats.total, color: '#6b7280' }
+                    ]}
+                    height={120}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-neutral-400 text-sm">
+                    No engagement data available
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Complained:</span>
-                    <span className="font-medium text-yellow-400">{analytics.mailgun_stats.complained}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Unsubscribed:</span>
-                    <span className="font-medium text-red-400">{analytics.mailgun_stats.unsubscribed}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Total Events:</span>
-                    <span className="font-medium text-neutral-400">{analytics.mailgun_stats.total}</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
             
@@ -494,54 +544,71 @@ export default function DashboardPage() {
           <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
             <h3 className="text-xl font-semibold text-white mb-6">Lead Quality Analysis</h3>
             
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-4">
                 <h4 className="font-medium text-white">Email Validation Results</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Total Leads:</span>
-                    <span className="font-medium text-white">{analytics.leads.total}</span>
+                {analytics.leads.total > 0 ? (
+                  <PieChart
+                    data={[
+                      { label: 'Deliverable', value: analytics.leads.deliverable, color: '#10b981' },
+                      { label: 'Undeliverable', value: analytics.leads.undeliverable, color: '#ef4444' },
+                      { label: 'Risky', value: analytics.leads.risky, color: '#f59e0b' },
+                      { label: 'Not Validated', value: analytics.leads.total - analytics.leads.validated, color: '#6b7280' }
+                    ].filter(item => item.value > 0)}
+                    size={140}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-neutral-400 text-sm">
+                    No leads data available
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Validated:</span>
-                    <span className="font-medium text-blue-400">{analytics.leads.validated}</span>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-white">Quality Trend</h4>
+                {analytics.leads.total > 0 ? (
+                  <LineChart
+                    data={[
+                      { label: 'Total', value: analytics.leads.total },
+                      { label: 'Validated', value: analytics.leads.validated },
+                      { label: 'Deliverable', value: analytics.leads.deliverable },
+                      { label: 'Undeliverable', value: analytics.leads.undeliverable }
+                    ]}
+                    height={140}
+                    color="#f59e0b"
+                    showGrid={true}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-neutral-400 text-sm">
+                    No trend data available
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Deliverable:</span>
-                    <span className="font-medium text-green-400">{analytics.leads.deliverable}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Undeliverable:</span>
-                    <span className="font-medium text-red-400">{analytics.leads.undeliverable}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Risky:</span>
-                    <span className="font-medium text-yellow-400">{analytics.leads.risky}</span>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4">
                 <h4 className="font-medium text-white">Quality Metrics</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Validation Rate:</span>
-                    <span className="font-medium text-white">
-                      {analytics.leads.total > 0 ? Math.round((analytics.leads.validated / analytics.leads.total) * 100) : 0}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Deliverable Rate:</span>
-                    <span className="font-medium text-green-400">
-                      {analytics.leads.validated > 0 ? Math.round((analytics.leads.deliverable / analytics.leads.validated) * 100) : 0}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-300">Bounce Rate:</span>
-                    <span className="font-medium text-red-400">
-                      {analytics.leads.validated > 0 ? Math.round((analytics.leads.undeliverable / analytics.leads.validated) * 100) : 0}%
-                    </span>
-                  </div>
+                <div className="space-y-4">
+                  <ProgressBar
+                    label="Validation Rate"
+                    value={analytics.leads.total > 0 ? (analytics.leads.validated / analytics.leads.total) * 100 : 0}
+                    max={100}
+                    color="#3b82f6"
+                    height={8}
+                  />
+                  <ProgressBar
+                    label="Deliverable Rate"
+                    value={analytics.leads.validated > 0 ? (analytics.leads.deliverable / analytics.leads.validated) * 100 : 0}
+                    max={100}
+                    color="#10b981"
+                    height={8}
+                  />
+                  <ProgressBar
+                    label="Bounce Rate"
+                    value={analytics.leads.validated > 0 ? (analytics.leads.undeliverable / analytics.leads.validated) * 100 : 0}
+                    max={100}
+                    color="#ef4444"
+                    height={8}
+                  />
                 </div>
               </div>
             </div>

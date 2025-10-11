@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui';
 
 export default function GoogleAuthCallbackPage() {
   const router = useRouter();
@@ -116,12 +117,14 @@ export default function GoogleAuthCallbackPage() {
           <div className="text-red-600 text-6xl">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900">Authentication Failed</h2>
           <p className="text-gray-600">{error}</p>
-          <button
+          <Button
             onClick={() => router.push('/')}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            variant="primary"
+            size="md"
+            className="w-full bg-blue-600 hover:bg-blue-700"
           >
             Go to Dashboard
-          </button>
+          </Button>
         </div>
       </div>
     );

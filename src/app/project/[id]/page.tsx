@@ -6,6 +6,7 @@ import { ArrowRight, Play } from 'lucide-react';
 import { Button, Stepper } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { PROJECT_STEPS } from '@/lib/constants';
+import { StepNavigation } from '@/components/project/step-navigation';
 import { apiClient } from '@/lib/api';
 
 export default function ProjectPage() {
@@ -56,23 +57,16 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      {/* Header */}
-      <header className="bg-neutral-800 border-b border-neutral-700">
-        <div className="container-custom py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">{project.name}</h1>
-              <p className="text-neutral-300 mt-1">{project.description}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-neutral-300">Target: {project.targetCount} leads</p>
-                <p className="text-sm text-neutral-300">Industry: {project.niche}</p>
-              </div>
-            </div>
+      {/* Page Header */}
+      <div className="w-full py-12">
+        <div className="flex items-center justify-center relative max-w-7xl mx-auto px-8">
+          <StepNavigation className="hidden md:flex" />
+          <div className="absolute right-8 text-right">
+            <p className="text-sm text-neutral-300">Target: {project.targetCount} leads</p>
+            <p className="text-sm text-neutral-300">Industry: {project.niche}</p>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="container-custom py-12">
