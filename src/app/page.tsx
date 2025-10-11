@@ -338,7 +338,7 @@ export default function HomePage() {
       {/* Enhanced Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] scrollable-y shadow-2xl" data-lenis-prevent>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">Create New Project</h3>
@@ -365,7 +365,7 @@ export default function HomePage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white placeholder-gray-500 ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="My Lead Generation Campaign"
@@ -380,7 +380,7 @@ export default function HomePage() {
                     type="text"
                     value={formData.companyName}
                     onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white placeholder-gray-500 ${
                       errors.companyName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Your Company Ltd."
@@ -397,7 +397,7 @@ export default function HomePage() {
                   rows={3}
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none text-gray-900 bg-white placeholder-gray-500 ${
                     errors.description ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Describe your lead generation goals and target audience..."
@@ -413,7 +413,7 @@ export default function HomePage() {
                   type="email"
                   value={formData.companyEmail}
                   onChange={(e) => handleInputChange('companyEmail', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white placeholder-gray-500 ${
                     errors.companyEmail ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="hello@yourcompany.com"
@@ -429,7 +429,7 @@ export default function HomePage() {
                   <select 
                     value={formData.niche}
                     onChange={(e) => handleInputChange('niche', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white ${
                       errors.niche ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
@@ -449,7 +449,7 @@ export default function HomePage() {
                   <select 
                     value={formData.targetCount}
                     onChange={(e) => handleInputChange('targetCount', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white"
                   >
                     <option value="5">5 leads</option>
                   </select>
@@ -461,7 +461,7 @@ export default function HomePage() {
                   <select 
                     value={formData.campaignType}
                     onChange={(e) => handleInputChange('campaignType', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 bg-white ${
                       errors.campaignType ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >

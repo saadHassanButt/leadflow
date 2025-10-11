@@ -81,9 +81,10 @@ export const Modal: React.FC<ModalProps> = ({
           <motion.div
             className={cn(
               'relative w-full bg-neutral-100 rounded-2xl shadow-2xl',
-              'max-h-[90vh] overflow-y-auto',
+              'max-h-[90vh] scrollable-y',
               sizeClass
             )}
+            data-lenis-prevent
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}

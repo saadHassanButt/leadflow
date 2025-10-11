@@ -694,7 +694,7 @@ export default function LeadsPage() {
             </div>
             
             {filteredLeads.length > 0 ? (
-              <div className="overflow-x-auto overflow-y-auto max-h-96">
+              <div className="scrollable max-h-96" data-lenis-prevent>
                 <Table
                   columns={columns}
                   data={filteredLeads}

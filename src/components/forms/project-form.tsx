@@ -133,7 +133,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
           </label>
           <textarea
             rows={3}
-            className="input resize-none"
+            className="input resize-none text-neutral-900"
             placeholder="Describe your lead generation goals and target audience..."
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}

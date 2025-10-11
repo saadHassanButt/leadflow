@@ -25,6 +25,71 @@
   }
 }
 
+@layer components {
+  .input {
+    @apply w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors;
+    @apply text-neutral-900 bg-white placeholder-neutral-500;
+  }
+  
+  .input-error {
+    @apply border-error-500 focus:ring-error-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-soft border border-neutral-200;
+  }
+  
+  /* Scrollable components */
+  .scrollable {
+    overflow-y: auto;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .scrollable-y {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .scrollable-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Custom scrollbar styling */
+  .scrollable::-webkit-scrollbar,
+  .scrollable-y::-webkit-scrollbar,
+  .scrollable-x::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollable::-webkit-scrollbar-track,
+  .scrollable-y::-webkit-scrollbar-track,
+  .scrollable-x::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+  
+  .scrollable::-webkit-scrollbar-thumb,
+  .scrollable-y::-webkit-scrollbar-thumb,
+  .scrollable-x::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+  
+  .scrollable::-webkit-scrollbar-thumb:hover,
+  .scrollable-y::-webkit-scrollbar-thumb:hover,
+  .scrollable-x::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
 @layer utilities {
   .text-gradient {
     background: linear-gradient(135deg, #FF5A1F 0%, #C2410C 100%);
