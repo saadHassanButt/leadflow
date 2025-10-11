@@ -22,7 +22,6 @@ import { Button } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { useLeads } from '@/lib/hooks/use-leads';
 import { mailgunService, MailgunStats } from '@/lib/mailgun';
-import { googleOAuthDirectService } from '@/lib/google-oauth-direct';
 import { ProjectAnalytics, GoogleSheetsCampaignStats } from '@/types/mailgun';
 
 export default function DashboardPage() {
@@ -44,17 +43,41 @@ export default function DashboardPage() {
     
     setRefreshing(true);
     try {
-      // Fetch leads data with timeout and fallback
+      console.log('=== FETCHING DASHBOARD ANALYTICS ===');
+      console.log('Project ID:', projectId);
+      
+      // Get tokens from localStorage (same pattern as leads and templates)
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+      
+      // Fetch leads data using API route (same pattern as other pages)
       let allLeads = [];
       try {
-        console.log('Fetching leads from Google Sheets...');
-        allLeads = await Promise.race([
-          googleOAuthDirectService.getLeadsByProject(projectId),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-        ]) as any[];
-        console.log('Successfully fetched leads:', allLeads.length);
+        console.log('Fetching leads from API...');
+        const leadsResponse = await fetch(`/api/leads?project_id=${projectId}`, {
+          headers: {
+            'x-google-access-token': accessToken || '',
+            'x-google-refresh-token': refreshToken || '',
+            'x-google-token-expiry': tokenExpiry || '0',
+          }
+        });
+        
+        const leadsData = await leadsResponse.json();
+        
+        if (leadsData.success) {
+          allLeads = leadsData.data;
+          console.log('Successfully fetched leads:', allLeads.length);
+        } else if (leadsData.error === 'Not authenticated with Google Sheets' || leadsData.error === 'Token expired, please re-authenticate') {
+          // Redirect to authentication page
+          window.location.href = `/auth/google?project_id=${projectId}`;
+          return;
+        } else {
+          console.warn('Failed to fetch leads from API, using local leads:', leadsData.error);
+          allLeads = leads || [];
+        }
       } catch (error) {
-        console.warn('Failed to fetch leads from Google Sheets, using local leads:', error);
+        console.warn('Failed to fetch leads from API, using local leads:', error);
         // Fallback to local leads data
         allLeads = leads || [];
       }
@@ -68,15 +91,41 @@ export default function DashboardPage() {
         risky: allLeads.filter(lead => lead.validation_status === 'risky').length,
       };
 
-      // Fetch email templates
-      const templates = await googleOAuthDirectService.getTemplatesByProject(projectId);
+      // Fetch email templates using API route
+      let templates = [];
+      try {
+        console.log('Fetching templates from API...');
+        const templatesResponse = await fetch(`/api/templates?project_id=${projectId}`, {
+          headers: {
+            'x-google-access-token': accessToken || '',
+            'x-google-refresh-token': refreshToken || '',
+            'x-google-token-expiry': tokenExpiry || '0',
+          }
+        });
+        
+        const templatesData = await templatesResponse.json();
+        
+        if (templatesData.success) {
+          templates = templatesData.data;
+          console.log('Successfully fetched templates:', templates.length);
+        } else if (templatesData.error === 'Not authenticated with Google Sheets' || templatesData.error === 'Token expired, please re-authenticate') {
+          // Redirect to authentication page
+          window.location.href = `/auth/google?project_id=${projectId}`;
+          return;
+        } else {
+          console.warn('Failed to fetch templates from API:', templatesData.error);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch templates from API:', error);
+      }
+
       const templateStats = {
         total: templates.length,
         generated: templates.filter(t => t.ai_generated).length,
         edited: templates.filter(t => t.user_edited).length,
       };
 
-      // Fetch campaign statistics from Google Sheets
+      // Fetch campaign statistics using API route
       let campaignStats: GoogleSheetsCampaignStats | null = null;
       let mailgunStats: MailgunStats = {
         accepted: 0,
@@ -91,11 +140,24 @@ export default function DashboardPage() {
       };
 
       try {
-        console.log('Fetching campaign statistics from Google Sheets...');
-        const stats = await googleOAuthDirectService.getCampaignStatsByProject(projectId);
+        console.log('Fetching campaign statistics from API...');
+        const statsResponse = await fetch('/api/campaign-stats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-google-access-token': accessToken || '',
+            'x-google-refresh-token': refreshToken || '',
+            'x-google-token-expiry': tokenExpiry || '0',
+          },
+          body: JSON.stringify({
+            project_id: projectId
+          }),
+        });
         
-        if (stats.length > 0) {
-          campaignStats = stats[0]; // Use the first campaign stats found
+        const statsData = await statsResponse.json();
+        
+        if (statsData.success && statsData.data.length > 0) {
+          campaignStats = statsData.data[0]; // Use the first campaign stats found
           
           // Convert Google Sheets stats to MailgunStats format for compatibility
           mailgunStats = {
@@ -105,22 +167,31 @@ export default function DashboardPage() {
             opened: campaignStats.opened_unique,
             clicked: campaignStats.clicked_unique,
             complained: campaignStats.complained,
-            unsubscribed: 0, // Not available in Google Sheets
+            unsubscribed: campaignStats.unsubscribed,
             stored: 0, // Not available in Google Sheets
             total: campaignStats.total_sent
           };
           
-          console.log('Successfully fetched campaign stats from Google Sheets:', campaignStats);
+          console.log('Successfully fetched campaign stats from API:', campaignStats);
+        } else if (statsData.error === 'Not authenticated with Google Sheets' || statsData.error === 'Token expired, please re-authenticate') {
+          // Redirect to authentication page
+          window.location.href = `/auth/google?project_id=${projectId}`;
+          return;
         } else {
           console.log('No campaign stats found for project:', projectId);
         }
       } catch (error) {
-        console.warn('Failed to fetch campaign stats from Google Sheets:', error);
+        console.warn('Failed to fetch campaign stats from API:', error);
         // Keep the empty stats initialized above
       }
 
-      // Calculate performance metrics
-      const performanceMetrics = {
+      // Use pre-calculated performance metrics from Google Sheets if available
+      const performanceMetrics = campaignStats ? {
+        delivery_rate: campaignStats.delivery_rate,
+        open_rate: campaignStats.open_rate,
+        click_rate: campaignStats.click_rate,
+        bounce_rate: campaignStats.bounce_rate,
+      } : {
         delivery_rate: mailgunStats.accepted > 0 ? (mailgunStats.delivered / mailgunStats.accepted) * 100 : 0,
         open_rate: mailgunStats.delivered > 0 ? (mailgunStats.opened / mailgunStats.delivered) * 100 : 0,
         click_rate: mailgunStats.delivered > 0 ? (mailgunStats.clicked / mailgunStats.delivered) * 100 : 0,
@@ -141,8 +212,8 @@ export default function DashboardPage() {
         mailgun_stats: mailgunStats,
         performance_metrics: performanceMetrics,
         time_range: {
-          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString()
+          start: campaignStats?.time_range_begin || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          end: campaignStats?.time_range_end || new Date().toISOString()
         }
       };
 

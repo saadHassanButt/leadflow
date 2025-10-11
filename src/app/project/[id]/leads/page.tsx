@@ -294,6 +294,10 @@ export default function LeadsPage() {
     if (!editingLead) return;
 
     try {
+      console.log('=== FRONTEND: UPDATING LEAD ===');
+      console.log('Lead ID:', editingLead.lead_id);
+      console.log('Lead Data:', leadData);
+      
       // Get tokens from localStorage
       const accessToken = localStorage.getItem('google_access_token');
       const refreshToken = localStorage.getItem('google_refresh_token');
@@ -314,14 +318,23 @@ export default function LeadsPage() {
       });
 
       const data = await response.json();
+      console.log('Update response:', data);
       
       if (data.success) {
+        // Update the local state with the updated lead data
         setLeads(prev => prev.map(lead => 
           lead.lead_id === editingLead.lead_id 
-            ? { ...lead, ...data.data }
+            ? { ...lead, ...leadData, lead_id: editingLead.lead_id, project_id: lead.project_id }
             : lead
         ));
         setEditingLead(null);
+        
+        // Add a small delay and then refresh to ensure consistency
+        setTimeout(() => {
+          fetchLeads();
+        }, 1000);
+        
+        console.log('Lead updated successfully');
       } else if (data.error === 'Not authenticated with Google Sheets' || data.error === 'Token expired, please re-authenticate') {
         // Redirect to authentication page
         window.location.href = `/auth/google?project_id=${projectId}`;
@@ -332,6 +345,7 @@ export default function LeadsPage() {
       }
     } catch (error) {
       console.error('Error updating lead:', error);
+      alert('Error updating lead. Please try again.');
     }
   };
 

@@ -87,6 +87,19 @@ export interface GoogleSheetsCampaignStats {
   failed: number;
   bounced: number;
   complained: number;
+  unsubscribed: number;
+  delivery_rate: number;
+  open_rate: number;
+  click_rate: number;
+  click_to_open_rate: number;
+  bounce_rate: number;
+  failure_rate: number;
+  complaint_rate: number;
+  stats_fetched_at: string;
+  mailgun_events_found: number;
+  time_range_begin: string;
+  time_range_end: string;
+  update_type: string;
 }
 
 export interface ProjectAnalytics {

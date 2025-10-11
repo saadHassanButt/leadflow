@@ -39,6 +39,13 @@ class GoogleOAuthDirectService {
   private refreshToken: string | null = null;
   private tokenExpiry: number = 0;
 
+  // Set tokens manually (for API routes)
+  setTokens(accessToken: string, refreshToken: string, tokenExpiry: number): void {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.tokenExpiry = tokenExpiry;
+  }
+
   // Get OAuth URL for initial authentication
   getAuthUrl(projectId?: string): string {
     const params = new URLSearchParams({
@@ -391,7 +398,7 @@ class GoogleOAuthDirectService {
   // Get email templates from Google Sheets
   async getTemplates(): Promise<any[]> {
     try {
-      const response = await this.makeAuthenticatedRequest('/values/Email_Templates!G2:N');
+      const response = await this.makeAuthenticatedRequest('/values/Email_Templates!A2:H');
       
       if (!response.values || response.values.length === 0) {
         return [];
@@ -430,39 +437,82 @@ class GoogleOAuthDirectService {
   // Update an existing template in Google Sheets
   async updateTemplate(templateId: string, updates: { subject: string; body: string }): Promise<boolean> {
     try {
-      const templates = await this.getTemplates();
-      const templateIndex = templates.findIndex(template => template.template_id === templateId);
-
-      if (templateIndex === -1) {
-        console.error('Template not found:', templateId);
+      console.log('=== UPDATING TEMPLATE ===');
+      console.log('Template ID:', templateId);
+      console.log('Updates:', updates);
+      
+      // Get fresh data from Google Sheets to find the exact row
+      console.log('Fetching fresh template data from Google Sheets...');
+      const response = await this.makeAuthenticatedRequest('/values/Email_Templates!A2:H');
+      
+      if (!response.values || response.values.length === 0) {
+        console.error('No templates found in Google Sheets');
         return false;
       }
 
-      const template = templates[templateIndex];
-      const rowNumber = templateIndex + 2; // +2 because we start from row 2 (after header)
+      // Find the exact row by searching through all rows
+      let targetRowNumber = -1;
+      let templateData = null;
+      
+      for (let i = 0; i < response.values.length; i++) {
+        const row = response.values[i];
+        if (row[0] === templateId) { // template_id is in column A (index 0)
+          targetRowNumber = i + 2; // +2 because sheets are 1-indexed and we skip header
+          templateData = {
+            template_id: row[0] || '',
+            project_id: row[1] || '',
+            subject: row[2] || '',
+            body: row[3] || '',
+            user_edited: row[4] || 'No',
+            final_version: row[5] || '',
+            ai_generated: row[6] || 'FALSE',
+            model_used: row[7] || ''
+          };
+          break;
+        }
+      }
 
+      if (targetRowNumber === -1 || !templateData) {
+        console.error('Template not found in Google Sheets:', templateId);
+        console.log('Available template IDs:', response.values.map((row: string[]) => row[0]).filter(Boolean));
+        return false;
+      }
+
+      console.log('Found template at row:', targetRowNumber);
+      console.log('Current template data:', templateData);
+
+      // Prepare updated values, preserving existing data where updates are not provided
       const values = [
-        template.template_id,
-        template.project_id,
-        updates.subject,
-        updates.body,
-        'Yes', // user_edited
-        updates.body, // final_version
-        template.ai_generated,
-        template.model_used
+        templateData.template_id, // Never update the template_id
+        templateData.project_id, // Never update the project_id
+        updates.subject, // Update subject
+        updates.body, // Update body
+        'Yes', // Mark as user_edited
+        updates.body, // Set final_version to the updated body
+        templateData.ai_generated, // Preserve ai_generated flag
+        templateData.model_used // Preserve model_used
       ];
 
-      await this.makeAuthenticatedRequest(`/values/Email_Templates!G${rowNumber}:N${rowNumber}?valueInputOption=RAW`, {
+      console.log('Final values to update:', values);
+      console.log('Updating row:', targetRowNumber);
+
+      // Update the specific row
+      await this.makeAuthenticatedRequest(`/values/Email_Templates!A${targetRowNumber}:H${targetRowNumber}?valueInputOption=RAW`, {
         method: 'PUT',
         body: JSON.stringify({
           values: [values]
         })
       });
 
-      console.log('Template successfully updated in Google Sheets:', templateId);
+      console.log('Template successfully updated in Google Sheets at row:', targetRowNumber);
+      console.log('=== TEMPLATE UPDATE COMPLETE ===');
       return true;
     } catch (error) {
+      console.error('=== TEMPLATE UPDATE ERROR ===');
       console.error('Error updating template in Google Sheets:', error);
+      console.error('Template ID:', templateId);
+      console.error('Updates:', updates);
+      console.error('========================');
       return false;
     }
   }
@@ -470,58 +520,111 @@ class GoogleOAuthDirectService {
   // Update an existing lead
   async updateLead(leadId: string, updates: Partial<GoogleSheetsLead>): Promise<boolean> {
     try {
-      console.log('Updating lead:', leadId);
-      const leads = await this.getLeads();
-      console.log('Total leads fetched:', leads.length);
+      console.log('=== UPDATING LEAD ===');
+      console.log('Lead ID:', leadId);
+      console.log('Updates:', updates);
       
-      const leadIndex = leads.findIndex(lead => lead.lead_id === leadId);
-      console.log('Lead index found:', leadIndex);
+      // Get fresh data from Google Sheets to find the exact row
+      console.log('Fetching fresh data from Google Sheets...');
+      const response = await this.makeAuthenticatedRequest('/values/Leads!A2:V');
       
-      if (leadIndex === -1) {
-        console.error('Lead not found:', leadId);
-        console.log('Available lead IDs:', leads.map(l => l.lead_id));
+      if (!response.values || response.values.length === 0) {
+        console.error('No leads found in Google Sheets');
         return false;
       }
 
-      const rowNumber = leadIndex + 2;
+      // Find the exact row by searching through all rows
+      let targetRowNumber = -1;
+      let leadData = null;
       
+      for (let i = 0; i < response.values.length; i++) {
+        const row = response.values[i];
+        if (row[0] === leadId) { // lead_id is in column A (index 0)
+          targetRowNumber = i + 2; // +2 because sheets are 1-indexed and we skip header
+          leadData = {
+            lead_id: row[0] || '',
+            project_id: row[1] || '',
+            name: row[2] || '',
+            email: row[3] || '',
+            company: row[4] || '',
+            position: row[5] || '',
+            source: row[6] || '',
+            status: row[7] || 'Active',
+            phone: row[8] || '',
+            website: row[9] || '',
+            address: row[10] || '',
+            rating: row[11] || '',
+            scraped_at: row[12] || '',
+            error: row[13] || '',
+            validation_status: row[14] || '',
+            validation_score: row[15] || '',
+            validation_reason: row[16] || '',
+            is_deliverable: row[17] || '',
+            is_free_email: row[18] || '',
+            is_role_email: row[19] || '',
+            is_disposable: row[20] || '',
+            validated_at: row[21] || ''
+          };
+          break;
+        }
+      }
+
+      if (targetRowNumber === -1 || !leadData) {
+        console.error('Lead not found in Google Sheets:', leadId);
+        console.log('Available lead IDs:', response.values.map((row: string[]) => row[0]).filter(Boolean));
+        return false;
+      }
+
+      console.log('Found lead at row:', targetRowNumber);
+      console.log('Current lead data:', leadData);
+
+      // Prepare updated values, preserving existing data where updates are not provided
       const values = [
-        updates.lead_id || leads[leadIndex].lead_id,
-        updates.project_id || leads[leadIndex].project_id,
-        updates.name || leads[leadIndex].name,
-        updates.email || leads[leadIndex].email,
-        updates.company || leads[leadIndex].company,
-        updates.position || leads[leadIndex].position,
-        updates.source || leads[leadIndex].source,
-        updates.status || leads[leadIndex].status,
-        updates.phone || leads[leadIndex].phone || '',
-        updates.website || leads[leadIndex].website || '',
-        updates.address || leads[leadIndex].address || '',
-        updates.rating || leads[leadIndex].rating || '',
-        updates.scraped_at || leads[leadIndex].scraped_at || '',
-        updates.error || leads[leadIndex].error || '',
+        leadData.lead_id, // Never update the lead_id
+        leadData.project_id, // Never update the project_id
+        updates.name !== undefined ? updates.name : leadData.name,
+        updates.email !== undefined ? updates.email : leadData.email,
+        updates.company !== undefined ? updates.company : leadData.company,
+        updates.position !== undefined ? updates.position : leadData.position,
+        updates.source !== undefined ? updates.source : leadData.source,
+        updates.status !== undefined ? updates.status : leadData.status,
+        updates.phone !== undefined ? updates.phone : leadData.phone,
+        updates.website !== undefined ? updates.website : leadData.website,
+        updates.address !== undefined ? updates.address : leadData.address,
+        updates.rating !== undefined ? updates.rating : leadData.rating,
+        updates.scraped_at !== undefined ? updates.scraped_at : leadData.scraped_at,
+        updates.error !== undefined ? updates.error : leadData.error,
         // Validation columns
-        updates.validation_status || leads[leadIndex].validation_status || '',
-        updates.validation_score || leads[leadIndex].validation_score || '',
-        updates.validation_reason || leads[leadIndex].validation_reason || '',
-        updates.is_deliverable || leads[leadIndex].is_deliverable || '',
-        updates.is_free_email || leads[leadIndex].is_free_email || '',
-        updates.is_role_email || leads[leadIndex].is_role_email || '',
-        updates.is_disposable || leads[leadIndex].is_disposable || '',
-        updates.validated_at || leads[leadIndex].validated_at || ''
+        updates.validation_status !== undefined ? updates.validation_status : leadData.validation_status,
+        updates.validation_score !== undefined ? updates.validation_score : leadData.validation_score,
+        updates.validation_reason !== undefined ? updates.validation_reason : leadData.validation_reason,
+        updates.is_deliverable !== undefined ? updates.is_deliverable : leadData.is_deliverable,
+        updates.is_free_email !== undefined ? updates.is_free_email : leadData.is_free_email,
+        updates.is_role_email !== undefined ? updates.is_role_email : leadData.is_role_email,
+        updates.is_disposable !== undefined ? updates.is_disposable : leadData.is_disposable,
+        updates.validated_at !== undefined ? updates.validated_at : leadData.validated_at
       ];
 
-      await this.makeAuthenticatedRequest(`/values/Leads!A${rowNumber}:V${rowNumber}?valueInputOption=RAW`, {
+      console.log('Final values to update:', values);
+      console.log('Updating row:', targetRowNumber);
+
+      // Update the specific row
+      await this.makeAuthenticatedRequest(`/values/Leads!A${targetRowNumber}:V${targetRowNumber}?valueInputOption=RAW`, {
         method: 'PUT',
         body: JSON.stringify({
           values: [values]
         })
       });
 
-      console.log('Lead successfully updated in Google Sheets:', leadId);
+      console.log('Lead successfully updated in Google Sheets at row:', targetRowNumber);
+      console.log('=== UPDATE COMPLETE ===');
       return true;
     } catch (error) {
+      console.error('=== UPDATE ERROR ===');
       console.error('Error updating lead in Google Sheets:', error);
+      console.error('Lead ID:', leadId);
+      console.error('Updates:', updates);
+      console.error('===================');
       return false;
     }
   }
@@ -555,16 +658,47 @@ class GoogleOAuthDirectService {
   async getCampaignStats(): Promise<any[]> {
     try {
       console.log('Fetching campaign stats from Google Sheets...');
-      const response = await this.makeAuthenticatedRequest('/values/Campaign_Stats!A2:L');
       
-      console.log('Campaign Stats response:', {
+      // First, let's check what sheets are available
+      console.log('Checking available sheets...');
+      try {
+        const sheetsResponse = await this.makeAuthenticatedRequest('');
+        console.log('Available sheets:', sheetsResponse.sheets?.map((s: any) => s.properties?.title) || 'No sheets info');
+      } catch (sheetsError) {
+        console.log('Could not fetch sheets info:', sheetsError);
+      }
+      
+      // Try different possible sheet names
+      const possibleSheetNames = ['Campaign_Stats', 'campaign_stats', 'CampaignStats', 'Stats'];
+      let response = null;
+      let usedSheetName = '';
+      
+      for (const sheetName of possibleSheetNames) {
+        try {
+          console.log(`Trying sheet name: ${sheetName}`);
+          response = await this.makeAuthenticatedRequest(`/values/${sheetName}!A2:Y`);
+          usedSheetName = sheetName;
+          console.log(`Successfully found sheet: ${sheetName}`);
+          break;
+        } catch (error) {
+          console.log(`Sheet ${sheetName} not found, trying next...`);
+          continue;
+        }
+      }
+      
+      if (!response) {
+        console.log('No campaign stats sheet found. Available sheet names to try:', possibleSheetNames);
+        return [];
+      }
+      
+      console.log(`Campaign Stats response from ${usedSheetName}:`, {
         hasValues: !!response.values,
         valuesLength: response.values?.length || 0,
         firstRow: response.values?.[0] || 'No rows'
       });
       
       if (!response.values || response.values.length === 0) {
-        console.log('No campaign stats found in Google Sheets');
+        console.log(`No campaign stats found in ${usedSheetName} sheet`);
         return [];
       }
 
@@ -582,7 +716,20 @@ class GoogleOAuthDirectService {
           clicked_unique: parseInt(row[8]) || 0,
           failed: parseInt(row[9]) || 0,
           bounced: parseInt(row[10]) || 0,
-          complained: parseInt(row[11]) || 0
+          complained: parseInt(row[11]) || 0,
+          unsubscribed: parseInt(row[12]) || 0,
+          delivery_rate: parseFloat(row[13]) || 0,
+          open_rate: parseFloat(row[14]) || 0,
+          click_rate: parseFloat(row[15]) || 0,
+          click_to_open_rate: parseFloat(row[16]) || 0,
+          bounce_rate: parseFloat(row[17]) || 0,
+          failure_rate: parseFloat(row[18]) || 0,
+          complaint_rate: parseFloat(row[19]) || 0,
+          stats_fetched_at: row[20] || '',
+          mailgun_events_found: parseInt(row[21]) || 0,
+          time_range_begin: row[22] || '',
+          time_range_end: row[23] || '',
+          update_type: row[24] || ''
         }));
     } catch (error) {
       console.error('Error fetching campaign stats from Google Sheets:', error);

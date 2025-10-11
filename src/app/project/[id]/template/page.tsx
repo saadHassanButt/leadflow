@@ -24,49 +24,50 @@ export default function TemplatePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTemplate = async () => {
-      try {
-        // Get tokens from localStorage
-        const accessToken = localStorage.getItem('google_access_token');
-        const refreshToken = localStorage.getItem('google_refresh_token');
-        const tokenExpiry = localStorage.getItem('google_token_expiry');
+  const fetchTemplate = async () => {
+    try {
+      setLoading(true);
+      // Get tokens from localStorage
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
 
-        if (!accessToken || !refreshToken || !tokenExpiry) {
-          setLoading(false);
-          return;
-        }
-
-        // Fetch templates from Google Sheets
-        const response = await fetch(`/api/templates?project_id=${projectId}`, {
-          headers: {
-            'x-google-access-token': accessToken,
-            'x-google-refresh-token': refreshToken,
-            'x-google-token-expiry': tokenExpiry,
-          }
-        });
-
-        const data = await response.json();
-        
-        if (data.success && data.data.length > 0) {
-          // Get the most recent template
-          const latestTemplate = data.data.sort((a: any, b: any) => 
-            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-          )[0];
-          
-          setTemplate({
-            template_id: latestTemplate.template_id,
-            subject: latestTemplate.subject,
-            content: latestTemplate.body
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch template:', error);
-      } finally {
+      if (!accessToken || !refreshToken || !tokenExpiry) {
         setLoading(false);
+        return;
       }
-    };
 
+      // Fetch templates from Google Sheets
+      const response = await fetch(`/api/templates?project_id=${projectId}`, {
+        headers: {
+          'x-google-access-token': accessToken,
+          'x-google-refresh-token': refreshToken,
+          'x-google-token-expiry': tokenExpiry,
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data.length > 0) {
+        // Get the most recent template
+        const latestTemplate = data.data.sort((a: any, b: any) => 
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        )[0];
+        
+        setTemplate({
+          template_id: latestTemplate.template_id,
+          subject: latestTemplate.subject,
+          content: latestTemplate.body
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch template:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (projectId) {
       fetchTemplate();
     }
@@ -131,8 +132,18 @@ export default function TemplatePage() {
       return;
     }
 
+    if (!template.subject.trim() || !template.content.trim()) {
+      alert('Subject and content cannot be empty.');
+      return;
+    }
+
     setSaving(true);
     try {
+      console.log('=== FRONTEND: SAVING TEMPLATE ===');
+      console.log('Template ID:', template.template_id);
+      console.log('Subject:', template.subject);
+      console.log('Content length:', template.content.length);
+      
       // Get tokens from localStorage
       const accessToken = localStorage.getItem('google_access_token');
       const refreshToken = localStorage.getItem('google_refresh_token');
@@ -154,17 +165,25 @@ export default function TemplatePage() {
       });
 
       const data = await response.json();
+      console.log('Save response:', data);
       
       if (data.success) {
         setIsEditing(false);
         alert('Template saved successfully!');
+        
+        // Refresh template data to ensure consistency
+        setTimeout(() => {
+          fetchTemplate();
+        }, 1000);
+        
+        console.log('Template saved successfully');
       } else if (data.error === 'Not authenticated with Google Sheets' || data.error === 'Token expired, please re-authenticate') {
         // Redirect to authentication page
         window.location.href = `/auth/google?project_id=${projectId}`;
         return;
       } else {
         console.error('Failed to save template:', data.error);
-        alert(`Error saving template: ${data.error}`);
+        alert(`Error saving template: ${data.error}\n\nDetails: ${data.details || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Failed to save template:', error);

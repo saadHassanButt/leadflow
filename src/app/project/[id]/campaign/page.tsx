@@ -10,7 +10,6 @@ import { PROJECT_STEPS } from '@/lib/constants';
 import { apiClient } from '@/lib/api';
 import { Campaign } from '@/types/campaign';
 import { mailgunService, MailgunStats } from '@/lib/mailgun';
-import { googleOAuthDirectService } from '@/lib/google-oauth-direct';
 import { GoogleSheetsCampaignStats } from '@/types/mailgun';
 
 export default function CampaignPage() {
@@ -126,7 +125,7 @@ export default function CampaignPage() {
         if (error.name === 'AbortError') {
           errorMessage = 'Request timed out. Please check if n8n server is running.';
         } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Cannot connect to n8n server. Please ensure n8n is running on localhost:5678';
+          errorMessage = 'Cannot connect to n8n server. Please ensure n8n is running on 192.168.18.180:5678';
         } else {
           errorMessage = error.message;
         }
@@ -149,27 +148,55 @@ export default function CampaignPage() {
     setApiError(null);
     
     try {
-      console.log('Fetching campaign stats from Google Sheets...');
+      console.log('=== FETCHING CAMPAIGN STATS ===');
+      console.log('Project ID:', projectId);
       
-      // Get campaign stats for this project from Google Sheets
-      const stats = await googleOAuthDirectService.getCampaignStatsByProject(projectId);
+      // Get tokens from localStorage (same pattern as leads and templates)
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+
+      // Call our API route that handles webhook trigger and stats fetching
+      const response = await fetch('/api/campaign-stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-google-access-token': accessToken || '',
+          'x-google-refresh-token': refreshToken || '',
+          'x-google-token-expiry': tokenExpiry || '0',
+        },
+        body: JSON.stringify({
+          project_id: projectId
+        }),
+      });
+
+      const data = await response.json();
       
-      if (stats.length > 0) {
-        // Use the first campaign stats found for this project
-        // In the future, you might want to aggregate multiple campaigns
-        const campaignStat = stats[0];
-        setCampaignStats(campaignStat);
-        console.log('Successfully fetched campaign stats from Google Sheets:', campaignStat);
-        setApiError(null);
+      if (data.success) {
+        if (data.data.length > 0) {
+          // Use the first campaign stats found for this project
+          const campaignStat = data.data[0];
+          setCampaignStats(campaignStat);
+          console.log('Successfully fetched campaign stats:', campaignStat);
+          setApiError(null);
+        } else {
+          // No stats found for this project
+          setCampaignStats(null);
+          setApiError('No campaign statistics found for this project. Make sure your n8n workflow has created the Campaign_Stats sheet and populated it with data.');
+          console.log('No campaign stats found for project:', projectId);
+        }
+      } else if (data.error === 'Not authenticated with Google Sheets' || data.error === 'Token expired, please re-authenticate') {
+        // Redirect to authentication page
+        window.location.href = `/auth/google?project_id=${projectId}`;
+        return;
       } else {
-        // No stats found for this project
+        console.error('Failed to fetch campaign stats:', data.error);
+        setApiError(data.error);
         setCampaignStats(null);
-        setApiError('No campaign statistics found for this project');
-        console.log('No campaign stats found for project:', projectId);
       }
       
     } catch (error) {
-      console.error('Failed to fetch campaign stats from Google Sheets:', error);
+      console.error('Failed to fetch campaign stats:', error);
       setApiError(error instanceof Error ? error.message : 'Failed to fetch campaign statistics');
       setCampaignStats(null);
     } finally {
@@ -311,9 +338,14 @@ export default function CampaignPage() {
           {campaignStats && (
             <div className="card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-neutral-900">
-                  Email Delivery Statistics
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-neutral-900">
+                    Email Campaign Analytics
+                  </h3>
+                  <p className="text-sm text-neutral-600 mt-1">
+                    Last updated: {campaignStats.stats_fetched_at ? new Date(campaignStats.stats_fetched_at).toLocaleString() : 'Never'}
+                  </p>
+                </div>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -335,8 +367,7 @@ export default function CampaignPage() {
                         {apiError}
                       </div>
                       <div className="text-sm text-red-600 mt-2">
-                        <strong>Note:</strong> Statistics are now fetched from Google Sheets Campaign_Stats tab.
-                        Make sure your n8n workflow is updating the sheet with campaign data.
+                        <strong>Note:</strong> Statistics are fetched from Google Sheets Campaign_Stats tab via n8n webhook.
                       </div>
                     </div>
                   </div>
@@ -348,89 +379,164 @@ export default function CampaignPage() {
                   <div className="flex items-center space-x-2 text-green-800">
                     <CheckCircle className="w-5 h-5" />
                     <div>
-                      <div className="font-medium">✅ Campaign Statistics Loaded from Google Sheets</div>
+                      <div className="font-medium">✅ Live Campaign Statistics</div>
                       <div className="text-sm text-green-700 mt-1">
-                        Statistics are being fetched from the Campaign_Stats sheet.
+                        Found {campaignStats.mailgun_events_found} Mailgun events • Campaign ID: {campaignStats.campaign_id}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
               
-              {/* Campaign Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">{campaignStats.accepted}</div>
-                  <div className="text-sm text-green-700">Accepted</div>
+              {/* Main Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">{campaignStats.total_sent}</div>
+                  <div className="text-sm font-medium text-blue-700">Total Sent</div>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">{campaignStats.delivered}</div>
-                  <div className="text-sm text-blue-700">Delivered</div>
+                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                  <div className="text-3xl font-bold text-green-600 mb-2">{campaignStats.delivered}</div>
+                  <div className="text-sm font-medium text-green-700">Delivered</div>
+                  <div className="text-xs text-green-600 mt-1">{campaignStats.delivery_rate.toFixed(1)}%</div>
                 </div>
-                <div className="text-center p-4 bg-orange-50 rounded-xl border border-orange-200">
-                  <div className="text-2xl font-bold text-orange-600">{campaignStats.failed}</div>
-                  <div className="text-sm text-orange-700">Failed</div>
+                <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">{campaignStats.opened_unique}</div>
+                  <div className="text-sm font-medium text-purple-700">Opened</div>
+                  <div className="text-xs text-purple-600 mt-1">{campaignStats.open_rate.toFixed(1)}%</div>
                 </div>
-                <div className="text-center p-4 bg-teal-50 rounded-xl border border-teal-200">
-                  <div className="text-2xl font-bold text-teal-600">{campaignStats.opened_unique}</div>
-                  <div className="text-sm text-teal-700">Opened</div>
+                <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                  <div className="text-3xl font-bold text-orange-600 mb-2">{campaignStats.clicked_unique}</div>
+                  <div className="text-sm font-medium text-orange-700">Clicked</div>
+                  <div className="text-xs text-orange-600 mt-1">{campaignStats.click_rate.toFixed(1)}%</div>
                 </div>
               </div>
 
               {/* Performance Metrics */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-3 gap-6 mb-6">
                 <div className="space-y-4">
-                  <h4 className="font-medium text-neutral-900">Delivery Metrics</h4>
+                  <h4 className="font-medium text-neutral-900 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
+                    Delivery Performance
+                  </h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-neutral-600">Delivery Rate:</span>
-                      <span className="font-medium">
-                        {campaignStats.accepted > 0 ? Math.round((campaignStats.delivered / campaignStats.accepted) * 100) : 0}%
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.delivery_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-green-600">{campaignStats.delivery_rate.toFixed(1)}%</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Open Rate:</span>
-                      <span className="font-medium">
-                        {campaignStats.delivered > 0 ? Math.round((campaignStats.opened_unique / campaignStats.delivered) * 100) : 0}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Click Rate:</span>
-                      <span className="font-medium">
-                        {campaignStats.delivered > 0 ? Math.round((campaignStats.clicked_unique / campaignStats.delivered) * 100) : 0}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-neutral-600">Bounce Rate:</span>
-                      <span className="font-medium text-error-600">
-                        {campaignStats.accepted > 0 ? Math.round((campaignStats.bounced / campaignStats.accepted) * 100) : 0}%
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-red-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.bounce_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-red-600">{campaignStats.bounce_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-600">Failure Rate:</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-orange-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.failure_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-orange-600">{campaignStats.failure_rate.toFixed(1)}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="font-medium text-neutral-900">Additional Metrics</h4>
+                  <h4 className="font-medium text-neutral-900 flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-purple-600" />
+                    Engagement Metrics
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-600">Open Rate:</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-purple-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.open_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-purple-600">{campaignStats.open_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-600">Click Rate:</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-orange-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.click_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-orange-600">{campaignStats.click_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-600">Click-to-Open:</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-16 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(campaignStats.click_to_open_rate, 100)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-blue-600">{campaignStats.click_to_open_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium text-neutral-900 flex items-center">
+                    <BarChart3 className="w-4 h-4 mr-2 text-blue-600" />
+                    Additional Stats
+                  </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-neutral-600">Total Sent:</span>
-                      <span className="font-medium text-neutral-600">{campaignStats.total_sent}</span>
+                      <span className="text-neutral-600">Total Opens:</span>
+                      <span className="font-medium text-blue-600">{campaignStats.opened_total}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-600">Clicked (Total):</span>
-                      <span className="font-medium text-accent-600">{campaignStats.clicked_total}</span>
+                      <span className="text-neutral-600">Total Clicks:</span>
+                      <span className="font-medium text-orange-600">{campaignStats.clicked_total}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-600">Clicked (Unique):</span>
-                      <span className="font-medium text-accent-600">{campaignStats.clicked_unique}</span>
+                      <span className="text-neutral-600">Complaints:</span>
+                      <span className="font-medium text-yellow-600">{campaignStats.complained}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-600">Complained:</span>
-                      <span className="font-medium text-warning-600">{campaignStats.complained}</span>
+                      <span className="text-neutral-600">Unsubscribed:</span>
+                      <span className="font-medium text-red-600">{campaignStats.unsubscribed}</span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Time Range Info */}
+              {campaignStats.time_range_begin && campaignStats.time_range_end && (
+                <div className="mt-6 p-4 bg-neutral-50 rounded-lg border">
+                  <div className="text-sm text-neutral-600">
+                    <strong>Data Range:</strong> {new Date(campaignStats.time_range_begin).toLocaleDateString()} - {new Date(campaignStats.time_range_end).toLocaleDateString()}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -561,3 +667,4 @@ export default function CampaignPage() {
     </div>
   );
 }
+
