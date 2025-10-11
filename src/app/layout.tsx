@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SmoothScrollProvider } from "@/components/Providers/SmoothScrollProvider";
 import { HeaderWrapper } from "@/components/layout/HeaderWrapper";
 import AuthDebug from "@/components/debug/AuthDebug";
+import ChatBot from "@/components/chatbot/ChatBot";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({
             <HeaderWrapper />
             {children}
             <AuthDebug />
+            <ChatBot />
           </AuthProvider>
         </SmoothScrollProvider>
       </body>

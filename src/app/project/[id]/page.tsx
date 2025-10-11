@@ -8,6 +8,7 @@ import { useProject } from '@/lib/hooks/use-project';
 import { PROJECT_STEPS } from '@/lib/constants';
 import { StepNavigation } from '@/components/project/step-navigation';
 import { apiClient } from '@/lib/api';
+import ChatBot from '@/components/chatbot/ChatBot';
 
 export default function ProjectPage() {
   const params = useParams();
@@ -169,6 +170,9 @@ export default function ProjectPage() {
           </div>
         </div>
       </main>
+      
+      {/* Project-specific ChatBot */}
+      <ChatBot projectId={projectId} currentPage="project-overview" />
     </div>
   );
 }
