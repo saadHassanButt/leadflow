@@ -2,7 +2,7 @@
 // Run this with: node test-webhook.js
 
 const testWebhook = async () => {
-  const webhookUrl = 'http://192.168.18.180:5678/webhook/google-sheets';
+  const webhookUrl = 'https://n8n.brokemediaio.com/webhook/google-sheets';
   
   const testLead = {
     action: 'add_lead',

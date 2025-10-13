@@ -84,8 +84,7 @@ export default function HomePage() {
       console.log('Sending webhook payload:', webhookPayload);
 
       // Call n8n webhook
-      // IP address of the laptop running n8n workflow
-      const n8nBaseUrl = 'http://192.168.18.180:5678';
+      const n8nBaseUrl = process.env.NEXT_PUBLIC_N8N_BASE_URL || 'https://n8n.brokemediaio.com';
       const response = await fetch(`${n8nBaseUrl}/webhook/create-project`, {
         method: 'POST',
         headers: {

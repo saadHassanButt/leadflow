@@ -4,7 +4,7 @@
 // For now, we'll use a webhook approach that you can set up in n8n
 // This is the most reliable way to handle Google Sheets integration
 class GoogleSheetsAuthService {
-  private webhookUrl = 'http://192.168.18.180:5678/webhook/google-sheets';
+  private webhookUrl = process.env.NEXT_PUBLIC_N8N_BASE_URL ? `${process.env.NEXT_PUBLIC_N8N_BASE_URL}/webhook/google-sheets` : 'https://n8n.brokemediaio.com/webhook/google-sheets';
 
   // Add lead via webhook (most reliable method)
   async addLead(lead: any): Promise<boolean> {

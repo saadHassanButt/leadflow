@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     googleOAuthDirectService.loadTokensFromHeaders(request);
 
     // Call n8n webhook to generate template
-    const n8nBaseUrl = process.env.N8N_BASE_URL || 'http://192.168.18.180:5678';
+    const n8nBaseUrl = process.env.N8N_BASE_URL || 'https://n8n.brokemediaio.com';
     const webhookUrl = `${n8nBaseUrl}/webhook/generate-template`;
     
     console.log('=== TEMPLATE GENERATION DEBUG ===');
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             '2. IP address is correct (check with ipconfig on n8n laptop)',
             '3. Both machines are on the same network',
             '4. Firewall allows port 5678',
-            `5. Current webhook URL: ${process.env.N8N_BASE_URL || 'http://192.168.18.180:5678'}/webhook/generate-template`,
+            `5. Current webhook URL: ${process.env.N8N_BASE_URL || 'https://n8n.brokemediaio.com'}/webhook/generate-template`,
             `6. Error: ${error.message}`
           ]
         },
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       { 
         error: 'Failed to generate template', 
         details: error instanceof Error ? error.message : 'Unknown error',
-        webhookUrl: `${process.env.N8N_BASE_URL || 'http://192.168.18.180:5678'}/webhook/generate-template`
+        webhookUrl: `${process.env.N8N_BASE_URL || 'https://n8n.brokemediaio.com'}/webhook/generate-template`
       },
       { status: 500 }
     );

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // First, trigger n8n webhook to fetch fresh stats
     console.log('Triggering n8n webhook to fetch fresh stats...');
-    const n8nBaseUrl = 'http://192.168.18.180:5678';
+    const n8nBaseUrl = process.env.N8N_BASE_URL || 'https://n8n.brokemediaio.com';
     
     try {
       const webhookResponse = await fetch(`${n8nBaseUrl}/webhook/fetch-stats`, {

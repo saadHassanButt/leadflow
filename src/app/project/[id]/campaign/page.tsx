@@ -109,7 +109,7 @@ export default function CampaignPage() {
     setLaunching(true);
     try {
       // Call the n8n webhook directly
-      const n8nBaseUrl = 'http://192.168.18.180:5678';
+      const n8nBaseUrl = process.env.NEXT_PUBLIC_N8N_BASE_URL || 'https://n8n.brokemediaio.com';
       const webhookPayload = {
         project_id: projectId,
         leads: leads,
@@ -168,7 +168,7 @@ export default function CampaignPage() {
         if (error.name === 'AbortError') {
           errorMessage = 'Request timed out. Please check if n8n server is running.';
         } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Cannot connect to n8n server. Please ensure n8n is running on 192.168.18.180:5678';
+          errorMessage = 'Cannot connect to n8n server. Please check your n8n installation at n8n.brokemediaio.com';
         } else {
           errorMessage = error.message;
         }

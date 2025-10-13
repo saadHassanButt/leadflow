@@ -4,7 +4,7 @@ import { Lead, CreateLeadData } from '@/types/lead';
 import { EmailTemplate, Campaign } from '@/types/campaign';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook';
+const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'https://n8n.brokemediaio.com/webhook';
 
 class ApiClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
