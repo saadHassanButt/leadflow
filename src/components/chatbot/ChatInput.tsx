@@ -47,7 +47,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
             onKeyDown={handleKeyDown}
             placeholder="Ask me about your campaigns, leads, or projects..."
             disabled={disabled}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] max-h-32"
+            className="w-full p-3 pr-12 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] max-h-32 text-gray-900 placeholder-gray-500"
             rows={1}
           />
           <button
