@@ -1,6 +1,8 @@
 // UPDATED MAILGUN API SERVICE - USING NEW METRICS API
 // Documentation: https://documentation.mailgun.com/docs/mailgun/api-reference/openapi-final/tag/Metrics/
 
+import { MailgunCampaignStats, MailgunEvent } from '../types/mailgun';
+
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY || '';
 const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN || '';
 const MAILGUN_BASE_URL = 'https://api.mailgun.net'; // Updated base URL
@@ -35,7 +37,7 @@ export interface MailgunMetricsResponse {
   end: string;
   resolution: string;
   metrics: MailgunMetrics;
-  dimensions: any[];
+  dimensions: Record<string, unknown>[];
 }
 
 class MailgunService {
@@ -158,22 +160,22 @@ class MailgunService {
   }
 
   // Convert new metrics format to legacy stats format for compatibility
-  private convertMetricsToStats(response: any): MailgunStats {
+  private convertMetricsToStats(response: { items?: { metrics?: Record<string, { value: number }> }[]; metrics?: Record<string, number> }): MailgunStats {
     // Handle the new API response structure with items array
     if (response.items && Array.isArray(response.items)) {
       // Aggregate metrics from all items
-      const aggregatedMetrics = response.items.reduce((acc: any, item: any) => {
+      const aggregatedMetrics = response.items.reduce((acc: Record<string, number>, item: { metrics?: Record<string, { value: number }> }) => {
         const metrics = item.metrics || {};
         return {
-          accepted_count: (acc.accepted_count || 0) + (metrics.accepted_count || 0),
-          delivered_count: (acc.delivered_count || 0) + (metrics.delivered_count || 0),
-          failed_permanent_count: (acc.failed_permanent_count || 0) + (metrics.failed_permanent_count || 0),
-          failed_temporary_count: (acc.failed_temporary_count || 0) + (metrics.failed_temporary_count || 0),
-          opened_count: (acc.opened_count || 0) + (metrics.opened_count || 0),
-          clicked_count: (acc.clicked_count || 0) + (metrics.clicked_count || 0),
-          complained_count: (acc.complained_count || 0) + (metrics.complained_count || 0),
-          unsubscribed_count: (acc.unsubscribed_count || 0) + (metrics.unsubscribed_count || 0),
-          stored_count: (acc.stored_count || 0) + (metrics.stored_count || 0)
+          accepted_count: (acc.accepted_count || 0) + (metrics.accepted_count?.value || 0),
+          delivered_count: (acc.delivered_count || 0) + (metrics.delivered_count?.value || 0),
+          failed_permanent_count: (acc.failed_permanent_count || 0) + (metrics.failed_permanent_count?.value || 0),
+          failed_temporary_count: (acc.failed_temporary_count || 0) + (metrics.failed_temporary_count?.value || 0),
+          opened_count: (acc.opened_count || 0) + (metrics.opened_count?.value || 0),
+          clicked_count: (acc.clicked_count || 0) + (metrics.clicked_count?.value || 0),
+          complained_count: (acc.complained_count || 0) + (metrics.complained_count?.value || 0),
+          unsubscribed_count: (acc.unsubscribed_count || 0) + (metrics.unsubscribed_count?.value || 0),
+          stored_count: (acc.stored_count || 0) + (metrics.stored_count?.value || 0)
         };
       }, {});
 
@@ -233,11 +235,6 @@ class MailgunService {
     };
   }
 
-  // DEPRECATED - Keep for backward compatibility
-  async getProjectEvents(projectId: string, limit: number = 100): Promise<any[]> {
-    console.warn('getProjectEvents is deprecated, use getProjectMetrics instead');
-    return [];
-  }
 
   // Get campaign statistics
   async getCampaignStats(campaignId: string, startDate?: string, endDate?: string): Promise<MailgunCampaignStats> {
@@ -373,4 +370,3 @@ class MailgunService {
 
 // Export singleton instance
 export const mailgunService = new MailgunService();
-export type { MailgunEvent, MailgunStats, MailgunCampaignStats, MailgunDomainStats };

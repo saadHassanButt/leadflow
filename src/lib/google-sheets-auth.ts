@@ -1,8 +1,6 @@
 // Google Sheets API with proper authentication
 // This uses a service account approach for persistent authentication
 
-const GOOGLE_SHEETS_DOCUMENT_ID = '1ipsWabylSSq1m8GjO1lcyajjqFAqZ4BXoxYBEcRJDUE';
-
 // For now, we'll use a webhook approach that you can set up in n8n
 // This is the most reliable way to handle Google Sheets integration
 class GoogleSheetsAuthService {

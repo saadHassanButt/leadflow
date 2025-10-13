@@ -22,25 +22,9 @@ export const ParallaxSection: React.FC<ParallaxSectionProps> = ({
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset,
+    offset: offset as ["start end", "end start"],
   });
 
-  const getTransform = () => {
-    const baseTransform = scrollYProgress.get() * 100 * speed;
-    
-    switch (direction) {
-      case 'up':
-        return `translateY(${baseTransform}px)`;
-      case 'down':
-        return `translateY(${-baseTransform}px)`;
-      case 'left':
-        return `translateX(${baseTransform}px)`;
-      case 'right':
-        return `translateX(${-baseTransform}px)`;
-      default:
-        return `translateY(${baseTransform}px)`;
-    }
-  };
 
   const y = useTransform(scrollYProgress, [0, 1], [0, 100 * speed]);
   const x = useTransform(scrollYProgress, [0, 1], [0, 100 * speed]);

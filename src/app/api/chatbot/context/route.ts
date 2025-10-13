@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     console.log('Loading tokens into service...');
     googleOAuthDirectService.loadTokensFromHeaders(request);
 
-    const contextData: any = {};
+    const contextData: Record<string, unknown> = {};
 
     // Fetch projects if requested
     if (includeProjects) {
@@ -74,11 +74,12 @@ export async function GET(request: NextRequest) {
     contextData.metadata = {
       projectId: projectId || null,
       timestamp: new Date().toISOString(),
-      totalProjects: contextData.projects?.length || 0,
-      totalLeads: contextData.leads?.length || 0
+      totalProjects: Array.isArray(contextData.projects) ? contextData.projects.length : 0,
+      totalLeads: Array.isArray(contextData.leads) ? contextData.leads.length : 0
     };
 
-    console.log(`Context data prepared: ${contextData.metadata.totalProjects} projects, ${contextData.metadata.totalLeads} leads`);
+    const metadata = contextData.metadata as { totalProjects: number; totalLeads: number };
+    console.log(`Context data prepared: ${metadata.totalProjects} projects, ${metadata.totalLeads} leads`);
 
     return NextResponse.json({
       success: true,

@@ -1,20 +1,14 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ParallaxSection, ThreeDIcons, FloatingParticles } from '@/ui';
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
+import { ThreeDIcons } from '@/ui';
 import { Button } from '@/ui';
-import { ArrowRight, Play, Zap, Target, Mail, BarChart3, Users } from 'lucide-react';
+import { ArrowRight, Play, Zap, Target, Mail, BarChart3 } from 'lucide-react';
 
 export const ParallaxHero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start'],
-  });
 
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
     <section

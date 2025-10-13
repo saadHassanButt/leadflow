@@ -46,7 +46,7 @@ export function useLeads(projectId: string) {
       const response = await apiClient.updateLead(projectId, leadId, data);
       if (response.success && response.data) {
         setLeads(prev => prev.map(lead => 
-          lead.id === leadId ? response.data! : lead
+          lead.lead_id === leadId ? response.data! : lead
         ));
       }
     } catch (err) {
@@ -57,7 +57,7 @@ export function useLeads(projectId: string) {
   const deleteLead = async (leadId: string) => {
     try {
       await apiClient.deleteLead(projectId, leadId);
-      setLeads(prev => prev.filter(lead => lead.id !== leadId));
+      setLeads(prev => prev.filter(lead => lead.lead_id !== leadId));
     } catch (err) {
       console.error('Failed to delete lead:', err);
     }

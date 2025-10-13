@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     let webhookResult;
     try {
       webhookResult = responseText ? JSON.parse(responseText) : {};
-    } catch (parseError) {
+    } catch {
       console.log('Webhook response is not JSON, treating as empty response');
       webhookResult = {};
     }

@@ -1,28 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
-  BarChart3, 
   Users, 
-  Mail, 
-  FileText, 
+  FileText,
   TrendingUp, 
-  CheckCircle, 
   AlertCircle,
   RefreshCw,
-  ArrowLeft,
-  Target,
-  Send,
-  Eye,
-  MousePointer,
-  MessageSquare
+  Send
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { useLeads } from '@/lib/hooks/use-leads';
-import { mailgunService, MailgunStats } from '@/lib/mailgun';
-import { ProjectAnalytics, GoogleSheetsCampaignStats } from '@/types/mailgun';
+import { ProjectAnalytics, GoogleSheetsCampaignStats, MailgunStats } from '@/types/mailgun';
 import { BarChart, PieChart, DonutChart, ProgressBar, LineChart } from '@/components/charts';
 
 export default function DashboardPage() {
@@ -30,13 +21,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const projectId = params.id as string;
   const { project, loading: projectLoading } = useProject(projectId);
-  const { leads, loading: leadsLoading } = useLeads(projectId);
+  const { leads } = useLeads(projectId);
   
   const [analytics, setAnalytics] = useState<ProjectAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     if (!projectId) return;
     
     // Use project data if available, otherwise use fallback values
@@ -86,10 +77,10 @@ export default function DashboardPage() {
       // Calculate lead statistics
       const leadStats = {
         total: allLeads.length,
-        validated: allLeads.filter(lead => lead.validation_status && lead.validation_status !== '').length,
-        deliverable: allLeads.filter(lead => lead.validation_status === 'deliverable').length,
-        undeliverable: allLeads.filter(lead => lead.validation_status === 'undeliverable').length,
-        risky: allLeads.filter(lead => lead.validation_status === 'risky').length,
+        validated: allLeads.filter((lead: { validation_status?: string }) => lead.validation_status && lead.validation_status !== '').length,
+        deliverable: allLeads.filter((lead: { validation_status?: string }) => lead.validation_status === 'deliverable').length,
+        undeliverable: allLeads.filter((lead: { validation_status?: string }) => lead.validation_status === 'undeliverable').length,
+        risky: allLeads.filter((lead: { validation_status?: string }) => lead.validation_status === 'risky').length,
       };
 
       // Fetch email templates using API route
@@ -122,8 +113,8 @@ export default function DashboardPage() {
 
       const templateStats = {
         total: templates.length,
-        generated: templates.filter(t => t.ai_generated).length,
-        edited: templates.filter(t => t.user_edited).length,
+        generated: templates.filter((t: { ai_generated?: boolean }) => t.ai_generated).length,
+        edited: templates.filter((t: { user_edited?: boolean }) => t.user_edited).length,
       };
 
       // Fetch campaign statistics using API route
@@ -161,17 +152,19 @@ export default function DashboardPage() {
           campaignStats = statsData.data[0]; // Use the first campaign stats found
           
           // Convert Google Sheets stats to MailgunStats format for compatibility
-          mailgunStats = {
-            accepted: campaignStats.accepted,
-            delivered: campaignStats.delivered,
-            failed: campaignStats.failed,
-            opened: campaignStats.opened_unique,
-            clicked: campaignStats.clicked_unique,
-            complained: campaignStats.complained,
-            unsubscribed: campaignStats.unsubscribed,
-            stored: 0, // Not available in Google Sheets
-            total: campaignStats.total_sent
-          };
+          if (campaignStats) {
+            mailgunStats = {
+              accepted: campaignStats.accepted,
+              delivered: campaignStats.delivered,
+              failed: campaignStats.failed,
+              opened: campaignStats.opened_unique,
+              clicked: campaignStats.clicked_unique,
+              complained: campaignStats.complained,
+              unsubscribed: campaignStats.unsubscribed,
+              stored: 0, // Not available in Google Sheets
+              total: campaignStats.total_sent
+            };
+          }
           
           console.log('Successfully fetched campaign stats from API:', campaignStats);
         } else if (statsData.error === 'Not authenticated with Google Sheets' || statsData.error === 'Token expired, please re-authenticate') {
@@ -225,7 +218,7 @@ export default function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [projectId, project, leads]);
 
   useEffect(() => {
     if (projectId) {
@@ -233,14 +226,14 @@ export default function DashboardPage() {
       // Don't wait for project to load completely
       fetchAnalytics();
     }
-  }, [projectId]);
+  }, [projectId, fetchAnalytics]);
 
   // Separate effect to refetch when project loads
   useEffect(() => {
     if (projectId && project && !analytics) {
       fetchAnalytics();
     }
-  }, [project]);
+  }, [analytics, fetchAnalytics, project, projectId]);
 
   if (projectLoading || loading) {
     return (

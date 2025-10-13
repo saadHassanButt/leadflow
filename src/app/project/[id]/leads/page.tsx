@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowRight, Plus, Search, Edit3, Trash2, RefreshCw, Target, Mail, Building2, User, CheckCircle, AlertCircle } from 'lucide-react';
-import { Button, Stepper, Table, Modal } from '@/components/ui';
-import { PROJECT_STEPS, LEAD_STATUSES, EMAIL_STATUSES } from '@/lib/constants';
+import { Button, Table, Modal } from '@/components/ui';
 import { LeadForm } from '@/components/forms/lead-form';
 import { StepNavigation } from '@/components/project/step-navigation';
 import { CreateLeadData, Lead } from '@/types/lead';
@@ -33,7 +32,7 @@ export default function LeadsPage() {
   });
 
   // Fetch leads from API
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -66,7 +65,7 @@ export default function LeadsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   // Reset auth check when project changes
   useEffect(() => {
@@ -98,7 +97,7 @@ export default function LeadsPage() {
         }
       }
     }
-  }, [projectId, isAuthenticated, authLoading, refreshAuth, authChecked]);
+  }, [projectId, isAuthenticated, authLoading, refreshAuth, authChecked, fetchLeads]);
 
   // Separate effect to handle authentication state changes
   useEffect(() => {
@@ -109,7 +108,7 @@ export default function LeadsPage() {
       // User is not authenticated and auth is not loading, stop loading
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, authChecked, loading]);
+  }, [isAuthenticated, authLoading, authChecked, loading, fetchLeads]);
 
   const handleStartScraping = async () => {
     setScraping(true);
@@ -141,7 +140,7 @@ export default function LeadsPage() {
         try {
           result = JSON.parse(responseText);
           console.log('Parsed webhook response:', result);
-        } catch (parseError) {
+        } catch {
           console.warn('Response is not valid JSON, treating as text:', responseText);
           result = { message: responseText };
         }
@@ -454,7 +453,7 @@ export default function LeadsPage() {
     {
       key: 'validation_status' as keyof Lead,
       header: 'Email Status',
-      render: (value: string | undefined, lead: Lead) => {
+      render: (value: string | undefined) => {
         if (!value || value === '') {
           return (
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-neutral-600 text-white">
@@ -697,8 +696,9 @@ export default function LeadsPage() {
             {filteredLeads.length > 0 ? (
               <div className="scrollable max-h-96" data-lenis-prevent>
                 <Table
-                  columns={columns}
-                  data={filteredLeads}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  columns={columns as any}
+                  data={filteredLeads as unknown as Record<string, unknown>[]}
                   className="w-full min-w-max"
                 />
               </div>

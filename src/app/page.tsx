@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Target, Mail, BarChart3, Users, Zap, ArrowRight, CheckCircle, Star, Play, X } from 'lucide-react';
+import { Target, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 export default function HomePage() {

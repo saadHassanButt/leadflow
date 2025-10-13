@@ -19,7 +19,7 @@ export interface MailgunEvent {
     'code': number;
     'description': string;
   };
-  'user-variables': Record<string, any>;
+  'user-variables': Record<string, unknown>;
   'flags': {
     'is-routed': boolean;
     'is-authenticated': boolean;

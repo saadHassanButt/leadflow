@@ -118,7 +118,7 @@ export const TestimonialsSection: React.FC = () => {
 
                     {/* Content */}
                     <blockquote className="text-neutral-700 leading-relaxed italic">
-                      "{testimonial.content}"
+                      &ldquo;{testimonial.content}&rdquo;
                     </blockquote>
 
                     {/* Author */}

@@ -233,4 +233,3 @@ class EmailableService {
 
 // Export singleton instance
 export const emailableService = new EmailableService();
-export type { EmailableResponse, EmailableBatchResponse, ValidationResult };

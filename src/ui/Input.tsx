@@ -1,11 +1,10 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { colors, inputVariants, animations } from './design-tokens';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<HTMLMotionProps<'input'>, 'ref'> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -27,7 +26,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     className,
     ...props
   }, ref) => {
-    const variantStyles = inputVariants[variant];
     
     const inputClasses = cn(
       // Base styles

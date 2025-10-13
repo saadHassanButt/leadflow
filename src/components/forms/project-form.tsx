@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Mail, Target, Users, Briefcase } from 'lucide-react';
+import { Building2, Mail, Target, Briefcase } from 'lucide-react';
 import { Button, Input, Modal } from '@/components/ui';
 import { CreateProjectData, NICHES, TARGET_COUNTS, CAMPAIGN_TYPES } from '@/types/project';
 

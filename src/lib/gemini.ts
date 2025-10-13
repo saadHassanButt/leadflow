@@ -1,5 +1,5 @@
 // Gemini AI Service
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
 const API_KEY = process.env.GEMINI_API_KEY || '';
 
@@ -9,7 +9,7 @@ if (!API_KEY) {
 
 class GeminiService {
   private genAI: GoogleGenerativeAI;
-  private model: any;
+  private model: GenerativeModel;
 
   constructor() {
     this.genAI = new GoogleGenerativeAI(API_KEY);
@@ -119,7 +119,7 @@ Instructions:
   }
 
   // Helper method to format context data
-  formatContextData(data: any): string {
+  formatContextData(data: Record<string, unknown>): string {
     try {
       if (!data) return '';
 
@@ -128,7 +128,7 @@ Instructions:
       // Format projects data
       if (data.projects && Array.isArray(data.projects)) {
         context += `\nPROJECTS DATA:\n`;
-        data.projects.forEach((project: any) => {
+        (data.projects as Record<string, unknown>[]).forEach((project: Record<string, unknown>) => {
           context += `- Project: ${project.company_name || project.name} (ID: ${project.project_id})\n`;
           context += `  Niche: ${project.niche}\n`;
           context += `  Status: ${project.status}\n`;
@@ -143,7 +143,7 @@ Instructions:
         context += `Total Leads: ${data.leads.length}\n`;
         
         // Group by status
-        const statusGroups = data.leads.reduce((acc: any, lead: any) => {
+        const statusGroups = data.leads.reduce((acc: Record<string, number>, lead: { status: string }) => {
           acc[lead.status] = (acc[lead.status] || 0) + 1;
           return acc;
         }, {});
@@ -154,7 +154,7 @@ Instructions:
         });
 
         // Group by source
-        const sourceGroups = data.leads.reduce((acc: any, lead: any) => {
+        const sourceGroups = data.leads.reduce((acc: Record<string, number>, lead: { source: string }) => {
           acc[lead.source] = (acc[lead.source] || 0) + 1;
           return acc;
         }, {});
@@ -167,7 +167,7 @@ Instructions:
         // Recent leads sample
         const recentLeads = data.leads.slice(0, 5);
         context += `\nRecent Leads Sample:\n`;
-        recentLeads.forEach((lead: any) => {
+        recentLeads.forEach((lead: { name: string; email: string; company: string; status: string }) => {
           context += `- ${lead.name} (${lead.email}) at ${lead.company} - Status: ${lead.status}\n`;
         });
       }

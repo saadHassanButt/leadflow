@@ -15,11 +15,17 @@ export interface ChatSession {
 }
 
 export interface ChatbotContextData {
-  projects?: any[];
-  leads?: any[];
-  campaignStats?: any;
+  projects?: Record<string, unknown>[];
+  leads?: Record<string, unknown>[];
+  campaignStats?: Record<string, unknown>;
   currentProjectId?: string;
   currentPage?: string;
+  metadata?: {
+    projectId?: string | null;
+    timestamp?: string;
+    totalProjects?: number;
+    totalLeads?: number;
+  };
 }
 
 export interface ChatbotState {

@@ -25,11 +25,11 @@ export function loadChatHistory(): ChatSession[] {
     if (stored) {
       const sessions = JSON.parse(stored);
       // Convert timestamp strings back to Date objects
-      return sessions.map((session: any) => ({
+      return sessions.map((session: { createdAt: string; updatedAt: string; messages: { timestamp: string }[] }) => ({
         ...session,
         createdAt: new Date(session.createdAt),
         updatedAt: new Date(session.updatedAt),
-        messages: session.messages.map((msg: any) => ({
+        messages: session.messages.map((msg: { timestamp: string }) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }))
@@ -137,21 +137,21 @@ export function getConversationContext(messages: ChatMessage[], maxMessages: num
 }
 
 // Suggested questions based on context
-export function getSuggestedQuestions(contextData: any): string[] {
+export function getSuggestedQuestions(contextData: Record<string, unknown>): string[] {
   const suggestions: string[] = [];
   
-  if (contextData?.projects?.length > 0) {
+  if (Array.isArray(contextData?.projects) && contextData.projects.length > 0) {
     suggestions.push("How are my projects performing?");
     suggestions.push("Which project has the most leads?");
   }
   
-  if (contextData?.leads?.length > 0) {
+  if (Array.isArray(contextData?.leads) && contextData.leads.length > 0) {
     suggestions.push("Show me my recent leads");
     suggestions.push("What's my lead conversion rate?");
     suggestions.push("Which lead source is most effective?");
   }
   
-  if (contextData?.projects?.some((p: any) => p.status === 'active')) {
+  if (Array.isArray(contextData?.projects) && contextData.projects.some((p: { status: string }) => p.status === 'active')) {
     suggestions.push("What's the status of my active campaigns?");
   }
   

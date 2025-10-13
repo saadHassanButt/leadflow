@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowRight, Mail, Edit3, Sparkles } from 'lucide-react';
-import { Button, Stepper, Input } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
-import { PROJECT_STEPS } from '@/lib/constants';
 import { StepNavigation } from '@/components/project/step-navigation';
-import { apiClient } from '@/lib/api';
 
 export default function TemplatePage() {
   const params = useParams();
@@ -25,7 +23,7 @@ export default function TemplatePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchTemplate = async () => {
+  const fetchTemplate = useCallback(async () => {
     try {
       setLoading(true);
       // Get tokens from localStorage
@@ -51,7 +49,7 @@ export default function TemplatePage() {
       
       if (data.success && data.data.length > 0) {
         // Get the most recent template
-        const latestTemplate = data.data.sort((a: any, b: any) => 
+        const latestTemplate = data.data.sort((a: { created_at?: string }, b: { created_at?: string }) => 
           new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
         )[0];
         
@@ -66,13 +64,13 @@ export default function TemplatePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
       fetchTemplate();
     }
-  }, [projectId]);
+  }, [projectId, fetchTemplate]);
 
   const handleGenerateTemplate = async () => {
     setGenerating(true);
@@ -97,8 +95,8 @@ export default function TemplatePage() {
             niche: project?.niche,
             companyName: project?.companyName,
             campaignType: project?.campaignType,
-            targetAudience: (project as any)?.targetAudience || 'General audience',
-            valueProposition: (project as any)?.valueProposition || 'Unique value proposition'
+            targetAudience: (project as unknown as Record<string, unknown>)?.targetAudience as string || 'General audience',
+            valueProposition: (project as unknown as Record<string, unknown>)?.valueProposition as string || 'Unique value proposition'
           }
         }),
       });

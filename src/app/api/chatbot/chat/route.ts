@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Add project-specific context if projectId is provided
     if (projectId && context?.projects) {
-      const currentProject = context.projects.find((p: any) => p.project_id === projectId);
+      const currentProject = context.projects.find((p: { project_id: string }) => p.project_id === projectId);
       if (currentProject) {
         formattedContext += `\n\nCURRENT PROJECT FOCUS:\n`;
         formattedContext += `Project: ${currentProject.company_name} (ID: ${currentProject.project_id})\n`;
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
 
     // Add project-specific context if projectId is provided
     if (projectId && context?.projects) {
-      const currentProject = context.projects.find((p: any) => p.project_id === projectId);
+      const currentProject = context.projects.find((p: { project_id: string }) => p.project_id === projectId);
       if (currentProject) {
         formattedContext += `\n\nCURRENT PROJECT FOCUS:\n`;
         formattedContext += `Project: ${currentProject.company_name} (ID: ${currentProject.project_id})\n`;

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Loader2 } from 'lucide-react';
 import { ChatMessage, ChatbotContextData, ChatSession } from '@/types/chatbot';
 import ChatMessageComponent from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -72,14 +72,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ projectId, currentPage }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch context data when chatbot opens
-  useEffect(() => {
-    if (isOpen && !contextData) {
-      fetchContextData();
-    }
-  }, [isOpen, contextData]);
-
-  const fetchContextData = async () => {
+  const fetchContextData = useCallback(async () => {
     try {
       // Get auth tokens from localStorage
       const accessToken = localStorage.getItem('google_access_token');
@@ -118,7 +111,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ projectId, currentPage }) => {
     } catch (error) {
       console.error('Error fetching context data:', error);
     }
-  };
+  }, [projectId]);
+
+  // Fetch context data when chatbot opens
+  useEffect(() => {
+    if (isOpen && !contextData) {
+      fetchContextData();
+    }
+  }, [isOpen, contextData, fetchContextData]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || !currentSessionId) return;
@@ -306,7 +306,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ projectId, currentPage }) => {
             <ChatInput 
               onSendMessage={sendMessage} 
               disabled={isLoading} 
-              suggestions={contextData ? getSuggestedQuestions(contextData) : undefined}
+              suggestions={contextData ? getSuggestedQuestions(contextData as unknown as Record<string, unknown>) : undefined}
             />
           </motion.div>
         )}

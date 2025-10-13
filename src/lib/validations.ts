@@ -1,42 +1,42 @@
 // Validation schemas using simple validation functions
 // These can be replaced with zod when the dependency is installed
 
-export const validateProject = (data: any) => {
+export const validateProject = (data: Record<string, unknown>) => {
   const errors: Record<string, string> = {};
   
-  if (!data.name || data.name.trim().length === 0) {
+  if (!data.name || (data.name as string)?.trim().length === 0) {
     errors.name = 'Project name is required';
-  } else if (data.name.length > 100) {
+  } else if ((data.name as string)?.length > 100) {
     errors.name = 'Project name too long';
   }
   
-  if (!data.description || data.description.trim().length === 0) {
+  if (!data.description || (data.description as string)?.trim().length === 0) {
     errors.description = 'Description is required';
-  } else if (data.description.length > 500) {
+  } else if ((data.description as string)?.length > 500) {
     errors.description = 'Description too long';
   }
   
-  if (!data.companyName || data.companyName.trim().length === 0) {
+  if (!data.companyName || (data.companyName as string)?.trim().length === 0) {
     errors.companyName = 'Company name is required';
-  } else if (data.companyName.length > 100) {
+  } else if ((data.companyName as string)?.length > 100) {
     errors.companyName = 'Company name too long';
   }
   
-  if (!data.companyEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.companyEmail)) {
+  if (!data.companyEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.companyEmail as string)) {
     errors.companyEmail = 'Invalid email address';
   }
   
-  if (!data.niche || data.niche.trim().length === 0) {
+  if (!data.niche || (data.niche as string)?.trim().length === 0) {
     errors.niche = 'Please select a niche';
   }
   
-  if (!data.targetCount || data.targetCount < 1) {
+  if (!data.targetCount || (data.targetCount as number) < 1) {
     errors.targetCount = 'Target count must be at least 1';
-  } else if (data.targetCount > 10000) {
+  } else if ((data.targetCount as number) > 10000) {
     errors.targetCount = 'Target count too high';
   }
   
-  if (!data.campaignType || data.campaignType.trim().length === 0) {
+  if (!data.campaignType || (data.campaignType as string)?.trim().length === 0) {
     errors.campaignType = 'Please select a campaign type';
   }
   
@@ -46,46 +46,46 @@ export const validateProject = (data: any) => {
   };
 };
 
-export const validateLead = (data: any) => {
+export const validateLead = (data: Record<string, unknown>) => {
   const errors: Record<string, string> = {};
   
-  if (!data.firstName || data.firstName.trim().length === 0) {
+  if (!data.firstName || (data.firstName as string)?.trim().length === 0) {
     errors.firstName = 'First name is required';
-  } else if (data.firstName.length > 50) {
+  } else if ((data.firstName as string)?.length > 50) {
     errors.firstName = 'First name too long';
   }
   
-  if (!data.lastName || data.lastName.trim().length === 0) {
+  if (!data.lastName || (data.lastName as string)?.trim().length === 0) {
     errors.lastName = 'Last name is required';
-  } else if (data.lastName.length > 50) {
+  } else if ((data.lastName as string)?.length > 50) {
     errors.lastName = 'Last name too long';
   }
   
-  if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+  if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email as string)) {
     errors.email = 'Invalid email address';
   }
   
-  if (!data.company || data.company.trim().length === 0) {
+  if (!data.company || (data.company as string)?.trim().length === 0) {
     errors.company = 'Company is required';
-  } else if (data.company.length > 100) {
+  } else if ((data.company as string)?.length > 100) {
     errors.company = 'Company name too long';
   }
   
-  if (!data.title || data.title.trim().length === 0) {
+  if (!data.title || (data.title as string)?.trim().length === 0) {
     errors.title = 'Title is required';
-  } else if (data.title.length > 100) {
+  } else if ((data.title as string)?.length > 100) {
     errors.title = 'Title too long';
   }
   
-  if (data.linkedinUrl && data.linkedinUrl.trim().length > 0) {
+  if (data.linkedinUrl && (data.linkedinUrl as string)?.trim().length > 0) {
     try {
-      new URL(data.linkedinUrl);
+      new URL(data.linkedinUrl as string);
     } catch {
       errors.linkedinUrl = 'Invalid LinkedIn URL';
     }
   }
   
-  if (!data.industry || data.industry.trim().length === 0) {
+  if (!data.industry || (data.industry as string)?.trim().length === 0) {
     errors.industry = 'Industry is required';
   }
   
@@ -95,18 +95,18 @@ export const validateLead = (data: any) => {
   };
 };
 
-export const validateTemplate = (data: any) => {
+export const validateTemplate = (data: Record<string, unknown>) => {
   const errors: Record<string, string> = {};
   
-  if (!data.subject || data.subject.trim().length === 0) {
+  if (!data.subject || (data.subject as string)?.trim().length === 0) {
     errors.subject = 'Subject is required';
-  } else if (data.subject.length > 200) {
+  } else if ((data.subject as string)?.length > 200) {
     errors.subject = 'Subject too long';
   }
   
-  if (!data.content || data.content.trim().length === 0) {
+  if (!data.content || (data.content as string)?.trim().length === 0) {
     errors.content = 'Content is required';
-  } else if (data.content.length > 5000) {
+  } else if ((data.content as string)?.length > 5000) {
     errors.content = 'Content too long';
   }
   

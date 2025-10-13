@@ -71,18 +71,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ projectId }) => {
     router.push('/');
   };
 
-  const handleGetStarted = () => {
-    if (isHomePage) {
-      // Scroll to create project section or open modal
-      const element = document.querySelector('#get-started');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      router.push('/');
-    }
-  };
-
   return (
     <header className="bg-neutral-800 shadow-lg border-b border-neutral-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,7 +105,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ projectId }) => {
                 onClick={() => handleNavigation(item.href)}
                 variant={'active' in item && item.active ? 'nav-active' : 'nav'}
                 size="md"
-                icon={'icon' in item ? item.icon : undefined}
+                icon={'icon' in item ? item.icon as React.ReactNode : undefined}
               >
                 {item.label}
               </Button>
@@ -167,7 +155,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ projectId }) => {
                 variant={'active' in item && item.active ? 'nav-active' : 'nav'}
                 size="md"
                 className="w-full justify-start"
-                icon={'icon' in item ? item.icon : undefined}
+                icon={'icon' in item ? item.icon as React.ReactNode : undefined}
               >
                 {item.label}
               </Button>

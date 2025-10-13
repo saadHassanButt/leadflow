@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowRight, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Button, Stepper } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { PROJECT_STEPS } from '@/lib/constants';
@@ -49,7 +49,7 @@ export default function ProjectPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-neutral-900 mb-2">Project Not Found</h1>
-          <p className="text-neutral-600 mb-4">The project you're looking for doesn't exist.</p>
+          <p className="text-neutral-600 mb-4">The project you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.push('/')}>Go Home</Button>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function ProjectPage() {
             <Stepper steps={PROJECT_STEPS} currentStep={-1} />
             
             <div className="mt-8 grid md:grid-cols-3 gap-6">
-              {PROJECT_STEPS.map((step: any, index: number) => (
+              {PROJECT_STEPS.map((step, index: number) => (
                 <div key={step.id} className="text-center p-4 bg-neutral-50 rounded-xl">
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-soft">
                     <span className="text-lg font-bold text-neutral-400">{index + 1}</span>

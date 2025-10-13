@@ -1,8 +1,8 @@
 // Google OAuth authentication status
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { googleOAuthDirectService } from '@/lib/google-oauth-direct';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // For server-side, we can't access localStorage
     // So we'll always return not authenticated and let the client handle it

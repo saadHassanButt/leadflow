@@ -93,8 +93,8 @@ class GoogleOAuthDirectService {
 
       // Store tokens in localStorage for persistence
       if (typeof window !== 'undefined') {
-        localStorage.setItem('google_access_token', this.accessToken);
-        localStorage.setItem('google_refresh_token', this.refreshToken);
+        if (this.accessToken) localStorage.setItem('google_access_token', this.accessToken);
+        if (this.refreshToken) localStorage.setItem('google_refresh_token', this.refreshToken);
         localStorage.setItem('google_token_expiry', this.tokenExpiry.toString());
       }
 
@@ -107,7 +107,7 @@ class GoogleOAuthDirectService {
   }
 
   // Load tokens from localStorage (client-side only)
-  loadStoredTokens(): boolean {
+  async loadStoredTokens(): Promise<boolean> {
     if (typeof window === 'undefined') return false;
 
     const accessToken = localStorage.getItem('google_access_token');
@@ -124,7 +124,7 @@ class GoogleOAuthDirectService {
         return true;
       } else {
         // Token expired, try to refresh
-        return this.refreshAccessToken();
+        return await this.refreshAccessToken();
       }
     }
 
@@ -202,7 +202,7 @@ class GoogleOAuthDirectService {
 
       // Update stored tokens
       if (typeof window !== 'undefined') {
-        localStorage.setItem('google_access_token', this.accessToken);
+        if (this.accessToken) localStorage.setItem('google_access_token', this.accessToken);
         localStorage.setItem('google_token_expiry', this.tokenExpiry.toString());
       }
 
@@ -231,7 +231,7 @@ class GoogleOAuthDirectService {
     
     // Try to load stored tokens from localStorage (client-side only)
     if (typeof window !== 'undefined') {
-      const loaded = this.loadStoredTokens();
+      const loaded = await this.loadStoredTokens();
       console.log('loadStoredTokens returned:', loaded);
       
       if (loaded) {
@@ -413,7 +413,7 @@ class GoogleOAuthDirectService {
           body: row[3] || '',
           user_edited: row[4] === 'Yes' || row[4] === 'TRUE',
           final_version: row[5] || '',
-          ai_generated: row[6] === 'TRUE' || row[6] === true,
+          ai_generated: row[6] === 'TRUE' || row[6] === 'true',
           model_used: row[7] || '',
           created_at: new Date().toISOString() // We'll add this to the sheet structure
         }));
@@ -680,7 +680,7 @@ class GoogleOAuthDirectService {
           usedSheetName = sheetName;
           console.log(`Successfully found sheet: ${sheetName}`);
           break;
-        } catch (error) {
+        } catch {
           console.log(`Sheet ${sheetName} not found, trying next...`);
           continue;
         }

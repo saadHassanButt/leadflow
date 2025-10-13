@@ -14,7 +14,7 @@ interface TableProps<T> {
   onRowClick?: (row: T) => void;
 }
 
-export function Table<T extends Record<string, any>>({ 
+export function Table<T extends Record<string, unknown>>({ 
   columns, 
   data, 
   className,
@@ -48,7 +48,7 @@ export function Table<T extends Record<string, any>>({
             >
               {columns.map((column) => (
                 <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                  {column.render ? column.render(row[column.key], row) : row[column.key]}
+                  {column.render ? column.render(row[column.key], row) : String(row[column.key] ?? '')}
                 </td>
               ))}
             </tr>

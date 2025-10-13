@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 
-export default function GoogleAuthCallbackPage() {
+function GoogleAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { checkAuth } = useAuth();
@@ -139,5 +139,20 @@ export default function GoogleAuthCallbackPage() {
         <p className="text-sm text-gray-500">Redirecting you back to your project...</p>
       </div>
     </div>
+  );
+}
+
+export default function GoogleAuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <h2 className="text-2xl font-bold text-gray-900">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <GoogleAuthCallbackContent />
+    </Suspense>
   );
 }

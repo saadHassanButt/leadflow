@@ -87,7 +87,7 @@ class ApiClient {
   }
 
   // N8N Webhook triggers
-  async triggerWebhook(action: string, projectId: string, data: any): Promise<void> {
+  async triggerWebhook(action: string, projectId: string, data: Record<string, unknown>): Promise<void> {
     const payload: WebhookPayload = {
       action,
       projectId,

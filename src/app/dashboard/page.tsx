@@ -1,25 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  BarChart3, 
   Users, 
-  Mail, 
-  FileText, 
-  TrendingUp, 
   CheckCircle, 
   AlertCircle,
   RefreshCw,
   Plus,
   Target,
   Send,
-  Eye,
-  Calendar,
   Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { BarChart, PieChart, DonutChart, ProgressBar, LineChart } from '@/components/charts';
+import { BarChart, PieChart } from '@/components/charts';
 
 interface Project {
   project_id: string;
@@ -57,7 +51,7 @@ export default function MainDashboardPage() {
     campaignTypes: {}
   });
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setRefreshing(true);
       setError(null);
@@ -94,7 +88,7 @@ export default function MainDashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const calculateStats = (projectsData: Project[]) => {
     const niches: { [key: string]: number } = {};
@@ -128,7 +122,7 @@ export default function MainDashboardPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   const handleProjectClick = (projectId: string) => {
     router.push(`/project/${projectId}/dashboard`);

@@ -2,8 +2,6 @@
 
 import React, { useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Text, Box, Sphere, Cylinder, Torus } from '@react-three/drei';
-import { motion } from 'framer-motion';
 import * as THREE from 'three';
 
 // Lead generation icon - 3D target with arrows
@@ -11,10 +9,9 @@ const LeadTarget: React.FC<{ position: [number, number, number] }> = ({ position
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += 0.01;
-      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime) * 0.1;
     }
   });
 
@@ -66,10 +63,9 @@ const EmailIcon: React.FC<{ position: [number, number, number] }> = ({ position 
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-      meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.1;
+      meshRef.current.rotation.y += 0.005;
     }
   });
 
@@ -110,7 +106,7 @@ const AnalyticsIcon: React.FC<{ position: [number, number, number] }> = ({ posit
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += 0.005;
     }
@@ -176,7 +172,7 @@ export const ThreeDIcons: React.FC<ThreeDIconsProps> = ({ className }) => {
 export const FloatingParticles: React.FC<{ count?: number }> = ({ count = 50 }) => {
   const particles = useRef<THREE.Points>(null);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (particles.current) {
       particles.current.rotation.y += 0.001;
       particles.current.rotation.x += 0.0005;
@@ -198,6 +194,7 @@ export const FloatingParticles: React.FC<{ count?: number }> = ({ count = 50 }) 
           count={count}
           array={positions}
           itemSize={3}
+          args={[positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial size={0.02} color="#FF5A1F" transparent opacity={0.6} />

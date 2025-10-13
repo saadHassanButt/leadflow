@@ -6,7 +6,7 @@ import { Key, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 export function ApiKeyValidator() {
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; details?: any } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; message: string; details?: Record<string, unknown> } | null>(null);
 
   const testApiKey = async () => {
     setTesting(true);
@@ -39,7 +39,7 @@ export function ApiKeyValidator() {
         setResult({ 
           success: false, 
           message: `API Key test failed: ${response.status} - ${errorData}`,
-          details: errorData
+          details: { error: errorData }
         });
       }
     } catch (error) {
@@ -47,7 +47,7 @@ export function ApiKeyValidator() {
       setResult({ 
         success: false, 
         message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        details: error
+        details: error instanceof Error ? { message: error.message } : { error: String(error) }
       });
     } finally {
       setTesting(false);
@@ -86,7 +86,7 @@ export function ApiKeyValidator() {
               {result.details && result.success && (
                 <div className="mt-2 text-neutral-400">
                   <div>Available domains:</div>
-                  {result.details.items?.map((domain: any, index: number) => (
+                  {(result.details.items as { name: string; state: string }[])?.map((domain: { name: string; state: string }, index: number) => (
                     <div key={index} className="ml-2 text-green-300">
                       • {domain.name} ({domain.state})
                     </div>

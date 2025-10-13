@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Send, BarChart3, Users, Mail, TrendingUp, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button, Stepper } from '@/components/ui';
+import { Send, BarChart3, Mail, TrendingUp, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
-import { PROJECT_STEPS } from '@/lib/constants';
 import { StepNavigation } from '@/components/project/step-navigation';
 import { apiClient } from '@/lib/api';
 import { Campaign } from '@/types/campaign';
-import { mailgunService, MailgunStats } from '@/lib/mailgun';
 import { GoogleSheetsCampaignStats } from '@/types/mailgun';
 
 export default function CampaignPage() {
@@ -17,8 +15,8 @@ export default function CampaignPage() {
   const router = useRouter();
   const projectId = params.id as string;
   const { project, loading: projectLoading } = useProject(projectId);
-  const [leads, setLeads] = useState<any[]>([]);
-  const [leadsLoading, setLeadsLoading] = useState(true);
+  const [leads, setLeads] = useState<Record<string, unknown>[]>([]);
+  const [, setLeadsLoading] = useState(true);
   
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [launching, setLaunching] = useState(false);
@@ -28,7 +26,7 @@ export default function CampaignPage() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Fetch leads from Google Sheets
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       setLeadsLoading(true);
       
@@ -63,13 +61,13 @@ export default function CampaignPage() {
     } finally {
       setLeadsLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
       fetchLeads();
     }
-  }, [projectId]);
+  }, [projectId, fetchLeads]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -78,7 +76,7 @@ export default function CampaignPage() {
         if (response.data) {
           setCampaign(response.data);
         }
-      } catch (error) {
+      } catch {
         // Campaign API endpoint doesn't exist yet - this is expected for new campaigns
         console.log('Campaign endpoint not found (expected for new campaigns)');
         // Initialize with draft status if no campaign exists
@@ -146,7 +144,7 @@ export default function CampaignPage() {
         try {
           result = JSON.parse(responseText);
           console.log('Campaign launch response:', result);
-        } catch (jsonError) {
+        } catch {
           console.log('Response is not JSON, treating as text:', responseText);
           result = { message: responseText, success: true };
         }
@@ -186,7 +184,7 @@ export default function CampaignPage() {
     router.push(`/project/${projectId}/dashboard`);
   };
 
-  const fetchCampaignStats = async () => {
+  const fetchCampaignStats = useCallback(async () => {
     if (!projectId) return;
     
     setLoadingStats(true);
@@ -247,14 +245,14 @@ export default function CampaignPage() {
     } finally {
       setLoadingStats(false);
     }
-  };
+  }, [projectId]);
 
   // Fetch campaign stats when component mounts
   useEffect(() => {
     if (projectId) {
       fetchCampaignStats();
     }
-  }, [projectId]);
+  }, [projectId, fetchCampaignStats]);
 
   const getStatusIcon = (status: string | undefined) => {
     switch (status) {
@@ -593,9 +591,9 @@ export default function CampaignPage() {
                 <div className="text-sm text-neutral-400 space-y-2">
                   <p>This could mean:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Your n8n workflow hasn't updated the Campaign_Stats sheet yet</li>
-                    <li>The campaign hasn't been launched</li>
-                    <li>The project ID doesn't match any entries in the sheet</li>
+                    <li>Your n8n workflow hasn&apos;t updated the Campaign_Stats sheet yet</li>
+                    <li>The campaign hasn&apos;t been launched</li>
+                    <li>The project ID doesn&apos;t match any entries in the sheet</li>
                   </ul>
                 </div>
                 <Button

@@ -5,9 +5,6 @@ const GOOGLE_SHEETS_DOCUMENT_ID = '1ipsWabylSSq1m8GjO1lcyajjqFAqZ4BXoxYBEcRJDUE'
 
 // Service Account Credentials (you'll need to create a service account in Google Cloud Console)
 const SERVICE_ACCOUNT_EMAIL = 'your-service-account@your-project.iam.gserviceaccount.com';
-const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-YOUR_PRIVATE_KEY_HERE
------END PRIVATE KEY-----`;
 
 interface GoogleSheetsLead {
   lead_id: string;
@@ -43,11 +40,6 @@ class GoogleOAuthService {
 
   // Generate JWT token for service account authentication
   private async generateJWT(): Promise<string> {
-    const header = {
-      alg: 'RS256',
-      typ: 'JWT'
-    };
-
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       iss: SERVICE_ACCOUNT_EMAIL,
@@ -92,6 +84,9 @@ class GoogleOAuthService {
       this.accessToken = data.access_token;
       this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // 1 minute buffer
 
+      if (!this.accessToken) {
+        throw new Error('Failed to obtain access token');
+      }
       return this.accessToken;
     } catch (error) {
       console.error('Error getting OAuth token:', error);
