@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowRight, Plus, Search, Edit3, Trash2, RefreshCw, Target, Mail, Building2, User, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, Plus, Search, Edit3, Trash2, RefreshCw, Target, Mail, Building2, User, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { Button, Table, Modal } from '@/components/ui';
 import { LeadForm } from '@/components/forms/lead-form';
+import { ExcelUpload } from '@/components/forms/excel-upload';
 import { StepNavigation } from '@/components/project/step-navigation';
 import { CreateLeadData, Lead } from '@/types/lead';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +22,7 @@ export default function LeadsPage() {
   const [scraping, setScraping] = useState(false);
   const [validating, setValidating] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [validationStats, setValidationStats] = useState({
@@ -287,6 +289,58 @@ export default function LeadsPage() {
     } catch (error) {
       console.error('Error creating lead:', error);
       alert('Error creating lead. Please try again.');
+    }
+  };
+
+  const handleBulkUpload = async (leadsData: any[]) => {
+    try {
+      console.log('Starting bulk upload of', leadsData.length, 'leads');
+      
+      // Get tokens from localStorage
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+
+      const response = await fetch('/api/leads/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-google-access-token': accessToken || '',
+          'x-google-refresh-token': refreshToken || '',
+          'x-google-token-expiry': tokenExpiry || '0',
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          leads: leadsData
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Bulk upload completed:', data.data);
+        
+        // Show success message
+        const { successful, failed, total_processed } = data.data;
+        alert(`Upload completed!\n\n✅ Successfully uploaded: ${successful} leads\n${failed > 0 ? `❌ Failed: ${failed} leads` : ''}\n📊 Total processed: ${total_processed} leads`);
+        
+        // Close modal and refresh leads
+        setIsUploadModalOpen(false);
+        await fetchLeads();
+        
+      } else if (data.error === 'Not authenticated with Google Sheets' || data.error === 'Token expired, please re-authenticate') {
+        // Redirect to authentication page
+        window.location.href = `/auth/google?project_id=${projectId}`;
+        return;
+      } else {
+        console.error('Failed to upload leads:', data.error);
+        const details = data.details ? `\n\nDetails: ${data.details}` : '';
+        alert(`Error uploading leads: ${data.error}${details}`);
+      }
+    } catch (error) {
+      console.error('Error uploading leads:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Error uploading leads: ${errorMessage}`);
     }
   };
 
@@ -724,6 +778,13 @@ export default function LeadsPage() {
                   >
                     Add Manually
                   </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsUploadModalOpen(true)}
+                    icon={<Upload className="w-4 h-4" />}
+                  >
+                    Upload Sheet
+                  </Button>
                 </div>
               </div>
             )}
@@ -770,6 +831,20 @@ export default function LeadsPage() {
               onCancel={() => setEditingLead(null)}
             />
           )}
+        </Modal>
+
+        {/* Excel Upload Modal */}
+        <Modal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          title="Upload Excel/CSV File"
+          size="xl"
+        >
+          <ExcelUpload
+            onUpload={handleBulkUpload}
+            onCancel={() => setIsUploadModalOpen(false)}
+            projectId={projectId}
+          />
         </Modal>
       </div>
     </div>
