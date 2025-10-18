@@ -34,7 +34,7 @@ interface GoogleSheetsLead {
   validated_at?: string;
 }
 
-class GoogleOAuthDirectService {
+export class GoogleOAuthDirectService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private tokenExpiry: number = 0;
@@ -52,7 +52,7 @@ class GoogleOAuthDirectService {
       client_id: CLIENT_ID,
       redirect_uri: REDIRECT_URI,
       response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
+      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
       access_type: 'offline',
       prompt: 'consent select_account'
     });
@@ -328,6 +328,305 @@ class GoogleOAuthDirectService {
       return true;
     } catch (error) {
       console.error('Error adding lead to Google Sheets:', error);
+      return false;
+    }
+  }  // Add a lead with extra columns (for Excel uploads with additional fields)
+  async addLeadWithExtraColumns(lead: any): Promise<boolean> {
+    try {
+      // Standard columns in order
+      const standardColumns = [
+        'lead_id', 'project_id', 'name', 'email', 'company', 'position', 
+        'source', 'status', 'phone', 'website', 'address', 'rating', 
+        'scraped_at', 'error', 'validation_status', 'validation_score', 
+        'validation_reason', 'is_deliverable', 'is_free_email', 
+        'is_role_email', 'is_disposable', 'validated_at'
+      ];
+
+      // Build values array starting with standard columns
+      const values = standardColumns.map(col => lead[col] || '');
+
+      // Add extra columns at the end
+      const extraColumns = Object.keys(lead).filter(key => 
+        key.startsWith('extra_') && !standardColumns.includes(key)
+      );
+
+      extraColumns.forEach(extraCol => {
+        values.push(lead[extraCol] || '');
+      });
+
+      console.log('Adding lead with extra columns:', {
+        leadId: lead.lead_id,
+        standardColumnsCount: standardColumns.length,
+        extraColumnsCount: extraColumns.length,
+        totalColumns: values.length,
+        extraColumns: extraColumns
+      });
+
+      // Determine the range based on total columns
+      // Standard columns go A:V (22 columns), extra columns continue from W onwards
+      const lastColumn = this.getColumnLetter(values.length);
+      const range = `Leads!A:${lastColumn}:append`;
+
+      await this.makeAuthenticatedRequest(`/values/${range}?valueInputOption=RAW`, {
+        method: 'POST',
+        body: JSON.stringify({
+          values: [values]
+        })
+      });
+
+      console.log('Lead with extra columns successfully added to Google Sheets:', lead.lead_id);
+      return true;
+    } catch (error) {
+      console.error('Error adding lead with extra columns to Google Sheets:', error);
+      return false;
+    }
+  }
+
+  // Helper function to convert column number to letter (1=A, 2=B, ..., 27=AA, etc.)
+  private getColumnLetter(columnNumber: number): string {
+    let result = '';
+    while (columnNumber > 0) {
+      columnNumber--; // Make it 0-based
+      result = String.fromCharCode(65 + (columnNumber % 26)) + result;
+      columnNumber = Math.floor(columnNumber / 26);
+    }
+    return result;
+  }
+
+  // Upload file to Google Drive
+  async uploadToDrive(file: Buffer, fileName: string, mimeType: string): Promise<{ id: string; url: string } | null> {
+    try {
+      console.log('Uploading file to Google Drive:', fileName);
+
+      // Create multipart form data for file upload
+      const boundary = '-------314159265358979323846';
+      const delimiter = `\r\n--${boundary}\r\n`;
+      const close_delim = `\r\n--${boundary}--`;
+
+      // Metadata for the file
+      const metadata = {
+        name: fileName,
+        parents: [] // Upload to root folder, you can specify a folder ID here if needed
+      };
+
+      // Build the multipart request body
+      let multipartRequestBody = delimiter;
+      multipartRequestBody += 'Content-Type: application/json\r\n\r\n';
+      multipartRequestBody += JSON.stringify(metadata) + delimiter;
+      multipartRequestBody += `Content-Type: ${mimeType}\r\n\r\n`;
+
+      // Convert multipart body to buffer and combine with file
+      const multipartBodyBuffer = Buffer.from(multipartRequestBody, 'utf8');
+      const closeDelimBuffer = Buffer.from(close_delim, 'utf8');
+      const requestBody = Buffer.concat([multipartBodyBuffer, file, closeDelimBuffer]);
+
+      // Upload to Google Drive
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': `multipart/related; boundary="${boundary}"`,
+          'Content-Length': requestBody.length.toString()
+        },
+        body: requestBody
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Google Drive upload failed:', response.status, errorText);
+        throw new Error(`Google Drive upload failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('File uploaded to Google Drive:', result);
+
+      // Make the file publicly accessible (optional, for easier access)
+      await this.makeFilePublic(result.id);
+
+      // Return file info
+      return {
+        id: result.id,
+        url: `https://drive.google.com/file/d/${result.id}/view`
+      };
+
+    } catch (error) {
+      console.error('Error uploading to Google Drive:', error);
+      return null;
+    }
+  }
+
+  // Make a Google Drive file publicly accessible
+  private async makeFilePublic(fileId: string): Promise<void> {
+    try {
+      await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          role: 'reader',
+          type: 'anyone'
+        })
+      });
+      console.log('File made publicly accessible:', fileId);
+    } catch (error) {
+      console.error('Error making file public:', error);
+      // Don't throw error here, file upload was successful
+    }
+  }
+
+  // Update Email_Template tab with attachment information
+  async updateTemplateAttachments(templateId: string, attachments: { name: string; url: string }[]): Promise<boolean> {
+    try {
+      console.log('Updating template attachments for template:', templateId);
+
+      // First, check if Email_Template tab exists and get its data
+      console.log('Fetching Email_Templates tab data...');
+      let data;
+      
+      try {
+        data = await this.makeAuthenticatedRequest('/values/Email_Templates!A:Z');
+      } catch (apiError) {
+        console.error('Error fetching Email_Template tab:', apiError);
+        
+        // Try to get sheet metadata to see available tabs
+        try {
+          console.log('Fetching sheet metadata to check available tabs...');
+          const metadata = await this.makeAuthenticatedRequest('', {
+            method: 'GET'
+          });
+          
+          if (metadata.sheets) {
+            const sheetNames = metadata.sheets.map((sheet: any) => sheet.properties.title);
+            console.log('Available tabs in Google Sheets:', sheetNames);
+            
+            if (!sheetNames.includes('Email_Templates')) {
+              console.error('Email_Templates tab does not exist. Available tabs:', sheetNames);
+              console.error('Please create an "Email_Templates" tab in your Google Sheets');
+              return false;
+            }
+          }
+        } catch (metaError) {
+          console.error('Could not fetch sheet metadata:', metaError);
+        }
+        
+        throw apiError; // Re-throw the original error
+      }
+      
+      console.log('Email_Template response:', data);
+      
+      if (!data.values || data.values.length === 0) {
+        console.error('No data found in Email_Templates tab - tab may not exist or be empty');
+        return false;
+      }
+
+      const rows = data.values;
+      const headers = rows[0];
+      
+      console.log('Email_Template headers:', headers);
+      
+      // Find column indices
+      const templateIdIndex = headers.findIndex((h: string) => h.toLowerCase().includes('template_id'));
+      const attachmentUrlsIndex = headers.findIndex((h: string) => h.toLowerCase().includes('attachment_urls'));
+      const attachmentNamesIndex = headers.findIndex((h: string) => h.toLowerCase().includes('attachment_names'));
+      const hasAttachmentIndex = headers.findIndex((h: string) => h.toLowerCase().includes('has_attachment'));
+
+      console.log('Column indices:', {
+        templateIdIndex,
+        attachmentUrlsIndex,
+        attachmentNamesIndex,
+        hasAttachmentIndex
+      });
+
+      if (templateIdIndex === -1) {
+        console.error('template_id column not found in Email_Templates tab. Available headers:', headers);
+        return false;
+      }
+
+      // Check if attachment columns exist, if not, log warning but continue
+      if (attachmentUrlsIndex === -1) {
+        console.warn('attachment_urls column not found in Email_Templates tab');
+      }
+      if (attachmentNamesIndex === -1) {
+        console.warn('attachment_names column not found in Email_Templates tab');
+      }
+      if (hasAttachmentIndex === -1) {
+        console.warn('has_attachment column not found in Email_Templates tab');
+      }
+
+      // Find the row with matching template_id
+      let targetRowIndex = -1;
+      console.log('Searching for template_id:', templateId);
+      console.log('Available template IDs in rows:', rows.slice(1).map((row: any) => row[templateIdIndex]).filter(Boolean));
+      
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][templateIdIndex] === templateId) {
+          targetRowIndex = i;
+          break;
+        }
+      }
+
+      if (targetRowIndex === -1) {
+        console.error('Template not found in Email_Templates tab:', templateId);
+        console.error('Available templates:', rows.slice(1).map((row: any) => row[templateIdIndex]).filter(Boolean));
+        return false;
+      }
+
+      console.log('Found template at row:', targetRowIndex + 1);
+
+      // Prepare attachment data
+      const attachmentUrls = attachments.map(a => a.url).join(', ');
+      const attachmentNames = attachments.map(a => a.name).join(', ');
+      const hasAttachment = attachments.length > 0 ? 'TRUE' : 'FALSE';
+
+      // Prepare the update data
+      const updateData: any[] = [...rows[targetRowIndex]];
+      
+      // Ensure the row has enough columns
+      while (updateData.length <= Math.max(attachmentUrlsIndex, attachmentNamesIndex, hasAttachmentIndex)) {
+        updateData.push('');
+      }
+
+      // Update attachment columns if they exist
+      if (attachmentUrlsIndex !== -1) {
+        updateData[attachmentUrlsIndex] = attachmentUrls;
+      }
+      if (attachmentNamesIndex !== -1) {
+        updateData[attachmentNamesIndex] = attachmentNames;
+      }
+      if (hasAttachmentIndex !== -1) {
+        updateData[hasAttachmentIndex] = hasAttachment;
+      }
+
+      // Update the specific row
+      const rowNumber = targetRowIndex + 1; // Convert to 1-based indexing
+      const range = `Email_Templates!A${rowNumber}:${this.getColumnLetter(updateData.length)}${rowNumber}`;
+      
+      await this.makeAuthenticatedRequest(`/values/${range}?valueInputOption=RAW`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          values: [updateData]
+        })
+      });
+
+      console.log('Template attachments updated successfully');
+      return true;
+
+    } catch (error) {
+      console.error('Error updating template attachments:', error);
+      
+      // Provide more specific error information
+      if (error instanceof Error) {
+        if (error.message.includes('Email_Templates')) {
+          console.error('Email_Templates tab may not exist in your Google Sheets document');
+        } else if (error.message.includes('404')) {
+          console.error('Google Sheets document not found or not accessible');
+        } else if (error.message.includes('403')) {
+          console.error('Insufficient permissions to access Google Sheets');
+        }
+      }
+      
       return false;
     }
   }

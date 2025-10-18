@@ -84,22 +84,34 @@ export default function AuthDebug() {
         <div>Expiry: {tokens.tokenExpiry ? new Date(parseInt(tokens.tokenExpiry)).toLocaleTimeString() : 'N/A'}</div>
       </div>
       
-      {needsReAuth && (
+      <div className="space-y-2">
+        {needsReAuth && (
+          <Button
+            onClick={handleReAuthenticate}
+            variant="primary"
+            size="sm"
+            className="w-full bg-red-600 hover:bg-red-700 text-xs"
+          >
+            🔑 Re-authenticate (Required)
+          </Button>
+        )}
+        
+        {!needsReAuth && (
+          <div className="text-center text-green-400 font-medium mb-2">
+            ✅ Authentication OK
+          </div>
+        )}
+        
+        {/* Always show re-authenticate button for forcing new permissions */}
         <Button
           onClick={handleReAuthenticate}
-          variant="primary"
+          variant="secondary"
           size="sm"
           className="w-full bg-blue-600 hover:bg-blue-700 text-xs"
         >
-          🔑 Re-authenticate
+          🔄 Force Re-authenticate
         </Button>
-      )}
-      
-      {!needsReAuth && (
-        <div className="text-center text-green-400 font-medium">
-          ✅ Authentication OK
-        </div>
-      )}
+      </div>
     </div>
   );
 }

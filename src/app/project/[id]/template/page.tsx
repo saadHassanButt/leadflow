@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowRight, Mail, Edit3, Sparkles } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { ArrowRight, Mail, Edit3, Sparkles, Paperclip } from 'lucide-react';
+import { Button, Input, Modal } from '@/components/ui';
 import { useProject } from '@/lib/hooks/use-project';
 import { StepNavigation } from '@/components/project/step-navigation';
+import { AttachmentUpload } from '@/components/forms/attachment-upload';
 
 export default function TemplatePage() {
   const params = useParams();
@@ -22,6 +23,8 @@ export default function TemplatePage() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
 
   const fetchTemplate = useCallback(async () => {
     try {
@@ -192,6 +195,58 @@ export default function TemplatePage() {
     }
   };
 
+  const handleAttachmentUpload = async (uploadedAttachments: { name: string; url: string }[]) => {
+    try {
+      if (!template.template_id) {
+        alert('Please generate a template first before adding attachments.');
+        return;
+      }
+
+      // Get tokens from localStorage
+      const accessToken = localStorage.getItem('google_access_token');
+      const refreshToken = localStorage.getItem('google_refresh_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+
+      // Update the template with attachment information
+      const response = await fetch('/api/attachments/update-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-google-access-token': accessToken || '',
+          'x-google-refresh-token': refreshToken || '',
+          'x-google-token-expiry': tokenExpiry || '0',
+        },
+        body: JSON.stringify({
+          templateId: template.template_id,
+          attachments: uploadedAttachments
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setAttachments(uploadedAttachments);
+        setIsAttachmentModalOpen(false);
+        alert('Attachments uploaded successfully!');
+      } else if (data.error === 'Not authenticated with Google Sheets' || data.error === 'Token expired, please re-authenticate') {
+        // Redirect to authentication page
+        window.location.href = `/auth/google?project_id=${projectId}`;
+        return;
+      } else if (data.error?.includes('Insufficient permissions')) {
+        // Handle insufficient permissions for Google Drive
+        alert('Google Drive access required! You need to re-authenticate to grant Drive permissions. Redirecting to authentication...');
+        window.location.href = `/auth/google?project_id=${projectId}`;
+        return;
+      } else {
+        console.error('Failed to update template attachments:', data.error);
+        alert(`Error updating template attachments: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to upload attachments:', error);
+      alert('Error uploading attachments. Please try again.');
+    }
+  };
+
   const handleNext = () => {
     router.push(`/project/${projectId}/campaign`);
   };
@@ -237,7 +292,7 @@ export default function TemplatePage() {
 
           {/* Template Editor */}
           {template.content && (
-            <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700">
+            <div className="relative bg-neutral-800 rounded-xl p-6 border border-neutral-700">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-white">
@@ -360,6 +415,33 @@ export default function TemplatePage() {
                   </div>
                 </div>
 
+                {/* Attachments Section */}
+                {attachments.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-white mb-3">Attachments</h4>
+                    <div className="bg-neutral-700 rounded-xl p-4 border border-neutral-600">
+                      <div className="space-y-2">
+                        {attachments.map((attachment, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-neutral-600 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Paperclip className="w-4 h-4 text-neutral-300" />
+                              <span className="text-sm text-white">{attachment.name}</span>
+                            </div>
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary-400 hover:text-primary-300"
+                            >
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Preview */}
                 <div>
                   <h4 className="font-medium text-white mb-3">Preview</h4>
@@ -375,6 +457,12 @@ export default function TemplatePage() {
                       <div className="mt-2">
                         <p className="font-medium text-white">{template.subject}</p>
                       </div>
+                      {attachments.length > 0 && (
+                        <div className="mt-2 flex items-center space-x-2 text-xs text-neutral-400">
+                          <Paperclip className="w-3 h-3" />
+                          <span>{attachments.length} attachment{attachments.length > 1 ? 's' : ''}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="prose max-w-none">
                       <pre className="whitespace-pre-wrap font-sans text-white leading-relaxed">
@@ -384,6 +472,21 @@ export default function TemplatePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Attachment Button - Bottom Right Corner */}
+              {template.content && !isEditing && (
+                <div className="absolute bottom-4 right-4">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsAttachmentModalOpen(true)}
+                    icon={<Paperclip className="w-4 h-4" />}
+                    className="shadow-lg"
+                  >
+                    {attachments.length > 0 ? `${attachments.length} Attachments` : 'Add Attachments'}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -400,6 +503,21 @@ export default function TemplatePage() {
           )}
         </div>
       </main>
+
+      {/* Attachment Upload Modal */}
+      <Modal
+        isOpen={isAttachmentModalOpen}
+        onClose={() => setIsAttachmentModalOpen(false)}
+        title="Upload Attachments"
+        size="xl"
+      >
+        <AttachmentUpload
+          onUpload={handleAttachmentUpload}
+          onCancel={() => setIsAttachmentModalOpen(false)}
+          templateId={template.template_id}
+          existingAttachments={attachments}
+        />
+      </Modal>
     </div>
   );
 }

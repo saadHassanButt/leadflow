@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
     console.log('Tokens loaded successfully:', tokensLoaded);
 
     // Process and validate leads
-    const processedLeads: GoogleSheetsLead[] = leads.map((lead: any, index: number) => {
-      // Ensure all required fields are present
-      const processedLead: GoogleSheetsLead = {
+    const processedLeads = leads.map((lead: any, index: number) => {
+      // Start with standard fields
+      const processedLead: any = {
         lead_id: lead.lead_id || `lead_${project_id}_${Date.now()}_${index}`,
         project_id: project_id,
         name: lead.name || '',
@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
         validated_at: ''
       };
 
+        // Note: Extra columns are no longer processed
+
       return processedLead;
     });
 
@@ -96,9 +98,11 @@ export async function POST(request: NextRequest) {
       const batch = processedLeads.slice(i, i + batchSize);
       console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(processedLeads.length / batchSize)}`);
 
-      for (const lead of batch) {
-        try {
-          const success = await googleOAuthDirectService.addLead(lead);
+        for (const lead of batch) {
+          try {
+            console.log(`Adding lead: ${lead.name}`);
+            const success = await googleOAuthDirectService.addLead(lead);
+          
           if (success) {
             results.successful++;
             console.log(`Successfully added lead: ${lead.name} (${lead.email})`);

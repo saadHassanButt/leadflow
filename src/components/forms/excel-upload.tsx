@@ -11,6 +11,17 @@ interface ExcelUploadProps {
   projectId: string;
 }
 
+interface ColumnMapping {
+  [key: string]: string; // Excel column -> Database column
+}
+
+interface DatabaseColumn {
+  key: string;
+  label: string;
+  required: boolean;
+  description: string;
+}
+
 interface ParsedLead {
   lead_id: string;
   project_id: string;
@@ -28,12 +39,29 @@ interface ParsedLead {
   error?: string;
 }
 
+// Database column definitions
+const DATABASE_COLUMNS: DatabaseColumn[] = [
+  { key: 'name', label: 'Name', required: true, description: 'Contact full name' },
+  { key: 'email', label: 'Email', required: true, description: 'Email address' },
+  { key: 'company', label: 'Company', required: true, description: 'Company name' },
+  { key: 'website', label: 'Website', required: true, description: 'Company website URL' },
+  { key: 'position', label: 'Position', required: false, description: 'Job title or position' },
+  { key: 'phone', label: 'Phone', required: false, description: 'Phone number' },
+  { key: 'address', label: 'Address', required: false, description: 'Physical address' },
+  { key: 'source', label: 'Source', required: false, description: 'Lead source' },
+  { key: 'status', label: 'Status', required: false, description: 'Lead status' },
+  { key: 'rating', label: 'Rating', required: false, description: 'Lead rating or score' },
+];
+
 export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [fullData, setFullData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [showMapping, setShowMapping] = useState(false);
   const [validationResults, setValidationResults] = useState<{
     valid: number;
     invalid: number;
@@ -41,6 +69,70 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
   } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-map columns based on common patterns
+  const autoMapColumns = (headers: string[]): ColumnMapping => {
+    const mapping: ColumnMapping = {};
+    
+    headers.forEach(header => {
+      const normalizedHeader = header.toLowerCase().trim();
+      
+      // Name variations
+      if (normalizedHeader.match(/^(name|full.?name|contact.?name|first.?name|person|lead.?name)$/)) {
+        mapping[header] = 'name';
+      }
+      // Email variations
+      else if (normalizedHeader.match(/^(email|email.?address|e.?mail|contact.?email)$/)) {
+        mapping[header] = 'email';
+      }
+      // Company variations
+      else if (normalizedHeader.match(/^(company|organization|business|firm|corp|corporation|org)$/)) {
+        mapping[header] = 'company';
+      }
+      // Website variations
+      else if (normalizedHeader.match(/^(website|url|web|site|domain|homepage|web.?site|company.?url)$/)) {
+        mapping[header] = 'website';
+      }
+      // Position variations
+      else if (normalizedHeader.match(/^(position|title|job.?title|role|designation|job)$/)) {
+        mapping[header] = 'position';
+      }
+      // Phone variations
+      else if (normalizedHeader.match(/^(phone|mobile|telephone|tel|contact|number|phone.?number)$/)) {
+        mapping[header] = 'phone';
+      }
+      // Address variations
+      else if (normalizedHeader.match(/^(address|location|city|street|addr)$/)) {
+        mapping[header] = 'address';
+      }
+      // Source variations
+      else if (normalizedHeader.match(/^(source|origin|channel|lead.?source)$/)) {
+        mapping[header] = 'source';
+      }
+      // Status variations
+      else if (normalizedHeader.match(/^(status|state|stage|lead.?status)$/)) {
+        mapping[header] = 'status';
+      }
+      // Rating variations
+      else if (normalizedHeader.match(/^(rating|score|rank|priority|grade)$/)) {
+        mapping[header] = 'rating';
+      }
+    });
+    
+    return mapping;
+  };
+
+  // Check if all required columns are mapped
+  const validateMapping = (mapping: ColumnMapping): { isValid: boolean; missingColumns: string[] } => {
+    const requiredColumns = DATABASE_COLUMNS.filter(col => col.required).map(col => col.key);
+    const mappedColumns = Object.values(mapping);
+    const missingColumns = requiredColumns.filter(col => !mappedColumns.includes(col));
+    
+    return {
+      isValid: missingColumns.length === 0,
+      missingColumns
+    };
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -88,68 +180,76 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       console.log('Data rows:', dataRows.length);
       console.log('Total rows in file (including header):', jsonData.length);
 
-      // Map the data to our lead structure
-      const mappedData = dataRows
-        .filter((row: any) => row && row.length > 0 && row.some((cell: any) => cell !== null && cell !== undefined && cell !== ''))
-        .map((row: any, index: number) => {
-          const leadData: any = {};
-          
-          headers.forEach((header, headerIndex) => {
-            if (header && row[headerIndex] !== undefined) {
-              // Map common header variations to our standard fields
-              const normalizedHeader = header.toLowerCase().trim();
-              
-              if (normalizedHeader.includes('name') || normalizedHeader === 'full name' || normalizedHeader === 'contact name') {
-                leadData.name = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('email') || normalizedHeader === 'email address') {
-                leadData.email = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('company') || normalizedHeader === 'organization' || normalizedHeader === 'business') {
-                leadData.company = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('position') || normalizedHeader === 'title' || normalizedHeader === 'job title' || normalizedHeader === 'role') {
-                leadData.position = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('phone') || normalizedHeader === 'mobile' || normalizedHeader === 'telephone') {
-                leadData.phone = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('website') || normalizedHeader === 'url' || normalizedHeader === 'web') {
-                leadData.website = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('address') || normalizedHeader === 'location') {
-                leadData.address = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('source')) {
-                leadData.source = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('status')) {
-                leadData.status = String(row[headerIndex] || '').trim();
-              } else if (normalizedHeader.includes('rating') || normalizedHeader === 'score') {
-                leadData.rating = String(row[headerIndex] || '').trim();
-              }
-            }
-          });
-
-          // Generate lead ID and set defaults
-          leadData.lead_id = `lead_${projectId}_${Date.now()}_${index}`;
-          leadData.project_id = projectId;
-          leadData.source = leadData.source || 'Excel Upload';
-          leadData.status = leadData.status || 'Active';
-          leadData.scraped_at = new Date().toISOString();
-
-          return leadData;
-        });
-
-      console.log('Mapped data sample:', mappedData.slice(0, 3));
-      console.log('Total mapped leads:', mappedData.length);
-
-      // Validate the data
-      const validation = validateLeads(mappedData);
-      setValidationResults(validation);
+      // Store headers for mapping
+      setExcelHeaders(headers);
       
-      // Store full data for upload
-      setFullData(mappedData);
+      // Auto-map columns
+      const autoMapping = autoMapColumns(headers);
+      setColumnMapping(autoMapping);
       
-      // Show preview of first 5 rows
-      setPreviewData(mappedData.slice(0, 5));
+      // Check if mapping is valid
+      const mappingValidation = validateMapping(autoMapping);
+      
+      if (!mappingValidation.isValid) {
+        console.log('Auto-mapping incomplete. Missing columns:', mappingValidation.missingColumns);
+        setShowMapping(true);
+        setError(`Please map the required columns: ${mappingValidation.missingColumns.join(', ')}`);
+        return;
+      }
+
+      // Process data with mapping
+      processDataWithMapping(dataRows, autoMapping);
       
     } catch (error) {
       console.error('Error parsing file:', error);
       setError('Failed to parse the file. Please ensure it\'s a valid Excel or CSV file.');
     }
+  };
+
+  // Process data using column mapping
+  const processDataWithMapping = (dataRows: any[], mapping: ColumnMapping) => {
+    const mappedData = dataRows
+      .filter((row: any) => row && row.length > 0 && row.some((cell: any) => cell !== null && cell !== undefined && cell !== ''))
+      .map((row: any, index: number) => {
+        const leadData: any = {};
+        
+        // Apply column mapping for standard database fields
+        Object.entries(mapping).forEach(([excelColumn, dbColumn]) => {
+          const columnIndex = excelHeaders.indexOf(excelColumn);
+          if (columnIndex !== -1 && row[columnIndex] !== undefined) {
+            leadData[dbColumn] = String(row[columnIndex] || '').trim();
+          }
+        });
+
+        // Note: Extra columns are intentionally not processed
+        // Only mapped columns are included in the final data
+
+        // Generate lead ID and set defaults
+        leadData.lead_id = `lead_${projectId}_${Date.now()}_${index}`;
+        leadData.project_id = projectId;
+        leadData.source = leadData.source || 'Excel Upload';
+        leadData.status = leadData.status || 'Active';
+        leadData.scraped_at = new Date().toISOString();
+
+        return leadData;
+      });
+
+    console.log('Mapped data sample:', mappedData.slice(0, 3));
+    console.log('Total mapped leads:', mappedData.length);
+
+    // Validate the data
+    const validation = validateLeads(mappedData);
+    setValidationResults(validation);
+    
+    // Store full data for upload
+    setFullData(mappedData);
+    
+    // Show preview of first 5 rows
+    setPreviewData(mappedData.slice(0, 5));
+    
+    // Hide mapping interface if it was shown
+    setShowMapping(false);
+    setError(null);
   };
 
   const validateLeads = (leads: any[]) => {
@@ -161,6 +261,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       const rowNumber = index + 2; // +2 because we skip header and arrays are 0-indexed
       let hasIssues = false;
 
+      // Check required fields: name, email, company, website
       if (!lead.name || lead.name.trim() === '') {
         issues.push(`Row ${rowNumber}: Missing name`);
         hasIssues = true;
@@ -179,6 +280,14 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
         hasIssues = true;
       }
 
+      if (!lead.website || lead.website.trim() === '') {
+        issues.push(`Row ${rowNumber}: Missing website`);
+        hasIssues = true;
+      } else if (lead.website && !/^https?:\/\/.+/.test(lead.website) && !/^www\..+/.test(lead.website) && !/\..+/.test(lead.website)) {
+        issues.push(`Row ${rowNumber}: Invalid website format (${lead.website})`);
+        hasIssues = true;
+      }
+
       if (hasIssues) {
         invalid++;
       } else {
@@ -187,6 +296,52 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
     });
 
     return { valid, invalid, issues: issues.slice(0, 10) }; // Show max 10 issues
+  };
+
+  // Handle manual column mapping changes
+  const handleMappingChange = (excelColumn: string, dbColumn: string) => {
+    const newMapping = { ...columnMapping };
+    
+    if (dbColumn === '') {
+      // Remove mapping
+      delete newMapping[excelColumn];
+    } else {
+      // Remove any existing mapping for this database column
+      Object.keys(newMapping).forEach(key => {
+        if (newMapping[key] === dbColumn) {
+          delete newMapping[key];
+        }
+      });
+      // Add new mapping
+      newMapping[excelColumn] = dbColumn;
+    }
+    
+    setColumnMapping(newMapping);
+  };
+
+  // Apply manual mapping
+  const applyMapping = async () => {
+    const mappingValidation = validateMapping(columnMapping);
+    
+    if (!mappingValidation.isValid) {
+      setError(`Please map the required columns: ${mappingValidation.missingColumns.join(', ')}`);
+      return;
+    }
+
+    try {
+      // Re-read the file to get the original data rows
+      const arrayBuffer = await file!.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const dataRows = jsonData.slice(1);
+
+      processDataWithMapping(dataRows, columnMapping);
+    } catch (error) {
+      console.error('Error re-reading file for mapping:', error);
+      setError('Failed to process the file with mapping. Please try again.');
+    }
   };
 
   const handleUpload = async () => {
@@ -265,6 +420,9 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
                 setFile(null);
                 setPreviewData([]);
                 setFullData([]);
+                setExcelHeaders([]);
+                setColumnMapping({});
+                setShowMapping(false);
                 setValidationResults(null);
                 setError(null);
               }}
@@ -286,6 +444,92 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
             <span className="text-red-800 font-medium">Error</span>
           </div>
           <p className="text-red-700 mt-1">{error}</p>
+        </div>
+      )}
+
+      {/* Column Mapping Interface */}
+      {showMapping && excelHeaders.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h4 className="font-medium text-yellow-900 mb-4">Map Your Columns</h4>
+          <p className="text-sm text-yellow-800 mb-4">
+            Please map your Excel columns to the database fields. Required fields are marked with *.
+          </p>
+          
+          <div className="space-y-3">
+            {excelHeaders.map((header, index) => (
+              <div key={index} className="flex items-center space-x-4">
+                <div className="w-1/3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Excel Column: <span className="font-bold text-blue-600">{header}</span>
+                  </label>
+                </div>
+                <div className="w-1/3">
+                  <select
+                    value={columnMapping[header] || ''}
+                    onChange={(e) => handleMappingChange(header, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 bg-white"
+                  >
+                    <option value="">-- Select Database Field --</option>
+                    {DATABASE_COLUMNS.map((col) => (
+                      <option key={col.key} value={col.key}>
+                        {col.label} {col.required ? '*' : ''} - {col.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-1/3">
+                  {columnMapping[header] && (
+                    <div className="flex items-center">
+                      <CheckCircle className="w-4 h-4 text-green-500 mr-1" />
+                      <span className="text-sm text-green-700">
+                        Mapped to: {DATABASE_COLUMNS.find(col => col.key === columnMapping[header])?.label}
+                        {DATABASE_COLUMNS.find(col => col.key === columnMapping[header])?.required && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h5 className="font-medium text-blue-900 mb-2">Required Fields Status:</h5>
+            <div className="grid grid-cols-2 gap-2">
+              {DATABASE_COLUMNS.filter(col => col.required).map((col) => {
+                const isMapped = Object.values(columnMapping).includes(col.key);
+                return (
+                  <div key={col.key} className="flex items-center">
+                    {isMapped ? (
+                      <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
+                    )}
+                    <span className={`text-sm ${isMapped ? 'text-green-700' : 'text-red-700'}`}>
+                      {col.label} {isMapped ? '✓' : '(Required)'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button
+              onClick={() => setShowMapping(false)}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={applyMapping}
+              disabled={!validateMapping(columnMapping).isValid}
+            >
+              Apply Mapping
+            </Button>
+          </div>
         </div>
       )}
 
@@ -329,6 +573,18 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
             <p className="text-xs text-blue-800">
               <strong>Note:</strong> All {fullData.length} leads from your file will be uploaded, including both valid and invalid ones. Invalid leads can be corrected later in the leads table.
             </p>
+            {(() => {
+              const mappedExcelColumns = Object.keys(columnMapping);
+              const extraColumns = excelHeaders.filter(header => !mappedExcelColumns.includes(header));
+              if (extraColumns.length > 0) {
+                return (
+                  <p className="text-xs text-blue-800 mt-1">
+                    <strong>Extra Columns:</strong> {extraColumns.length} additional columns ({extraColumns.join(', ')}) will be preserved and appended at the end of your database.
+                  </p>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       )}
@@ -386,11 +642,17 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
         <h4 className="font-medium text-yellow-900 mb-2">File Format Requirements</h4>
         <ul className="text-sm text-yellow-800 space-y-1">
           <li>• First row should contain column headers</li>
-          <li>• Required columns: Name, Email, Company</li>
-          <li>• Optional columns: Position, Phone, Website, Address, Source, Status</li>
+          <li>• <strong>Required columns:</strong> Name, Email, Company, Website</li>
+          <li>• <strong>Optional columns:</strong> Position, Phone, Address, Source, Status, Rating</li>
+          <li>• Column names can be in any order - we'll auto-map them</li>
           <li>• Supported formats: .xlsx, .xls, .csv</li>
           <li>• Maximum file size: 10MB</li>
         </ul>
+        <div className="mt-3 p-3 bg-blue-50 rounded-md">
+          <p className="text-xs text-blue-800">
+            <strong>Smart Mapping:</strong> Our system automatically detects common column variations like "Full Name" → Name, "Email Address" → Email, "Organization" → Company, etc. If auto-mapping fails, you'll get a manual mapping interface.
+          </p>
+        </div>
       </div>
     </div>
   );
