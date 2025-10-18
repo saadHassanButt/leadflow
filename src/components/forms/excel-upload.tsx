@@ -32,6 +32,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [fullData, setFullData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [validationResults, setValidationResults] = useState<{
     valid: number;
@@ -85,6 +86,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
 
       console.log('Headers found:', headers);
       console.log('Data rows:', dataRows.length);
+      console.log('Total rows in file (including header):', jsonData.length);
 
       // Map the data to our lead structure
       const mappedData = dataRows
@@ -132,10 +134,14 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
         });
 
       console.log('Mapped data sample:', mappedData.slice(0, 3));
+      console.log('Total mapped leads:', mappedData.length);
 
       // Validate the data
       const validation = validateLeads(mappedData);
       setValidationResults(validation);
+      
+      // Store full data for upload
+      setFullData(mappedData);
       
       // Show preview of first 5 rows
       setPreviewData(mappedData.slice(0, 5));
@@ -184,11 +190,11 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
   };
 
   const handleUpload = async () => {
-    if (!file || !previewData.length) return;
+    if (!file || !fullData.length) return;
 
     setUploading(true);
     try {
-      await onUpload(previewData);
+      await onUpload(fullData);
     } catch (error) {
       console.error('Upload failed:', error);
       setError('Failed to upload leads. Please try again.');
@@ -258,6 +264,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
               onClick={() => {
                 setFile(null);
                 setPreviewData([]);
+                setFullData([]);
                 setValidationResults(null);
                 setError(null);
               }}
@@ -286,7 +293,11 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       {validationResults && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="font-medium text-blue-900 mb-2">Validation Results</h4>
-          <div className="grid grid-cols-2 gap-4 mb-3">
+          <div className="grid grid-cols-3 gap-4 mb-3">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{fullData.length}</div>
+              <div className="text-sm text-blue-700">Total Leads</div>
+            </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{validationResults.valid}</div>
               <div className="text-sm text-green-700">Valid Leads</div>
@@ -313,6 +324,12 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
               )}
             </div>
           )}
+          
+          <div className="mt-3 p-2 bg-blue-100 rounded-md">
+            <p className="text-xs text-blue-800">
+              <strong>Note:</strong> All {fullData.length} leads from your file will be uploaded, including both valid and invalid ones. Invalid leads can be corrected later in the leads table.
+            </p>
+          </div>
         </div>
       )}
 
@@ -357,10 +374,10 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
         <Button
           onClick={handleUpload}
           loading={uploading}
-          disabled={!file || !previewData.length || (validationResults?.valid === 0)}
+          disabled={!file || !fullData.length}
           icon={<Upload className="w-4 h-4" />}
         >
-          {uploading ? 'Uploading...' : `Upload ${previewData.length} Leads`}
+          {uploading ? 'Uploading...' : `Upload ${fullData.length} Leads`}
         </Button>
       </div>
 
