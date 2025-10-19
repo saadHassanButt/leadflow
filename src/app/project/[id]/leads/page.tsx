@@ -292,7 +292,7 @@ export default function LeadsPage() {
     }
   };
 
-  const handleBulkUpload = async (leadsData: any[]) => {
+  const handleBulkUpload = async (leadsData: Record<string, unknown>[]) => {
     try {
       console.log('Starting bulk upload of', leadsData.length, 'leads');
       
@@ -448,67 +448,71 @@ export default function LeadsPage() {
 
   const columns = [
     {
-      key: 'name' as keyof Lead,
+      key: 'name',
       header: 'Name',
-      render: (value: string | undefined, lead: Lead) => (
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-primary-600" />
+      render: (value: unknown, row: Record<string, unknown>) => {
+        const lead = row as unknown as Lead;
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-primary-600" />
+            </div>
+            <div>
+              <div className="font-medium text-white">{(value as string) || 'N/A'}</div>
+              <div className="text-sm text-neutral-300">{lead.position}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-white">{value || 'N/A'}</div>
-            <div className="text-sm text-neutral-300">{lead.position}</div>
-          </div>
-        </div>
-      )
+        );
+      }
     },
     {
-      key: 'email' as keyof Lead,
+      key: 'email',
       header: 'Email',
-      render: (value: string | undefined) => (
+      render: (value: unknown) => (
         <div className="flex items-center space-x-2">
           <Mail className="w-4 h-4 text-neutral-400" />
-          <span className="text-white">{value || 'N/A'}</span>
+          <span className="text-white">{(value as string) || 'N/A'}</span>
         </div>
       )
     },
     {
-      key: 'company' as keyof Lead,
+      key: 'company',
       header: 'Company',
-      render: (value: string | undefined) => (
+      render: (value: unknown) => (
         <div className="flex items-center space-x-2">
           <Building2 className="w-4 h-4 text-neutral-400" />
-          <span className="text-white">{value || 'N/A'}</span>
+          <span className="text-white">{(value as string) || 'N/A'}</span>
         </div>
       )
     },
     {
-      key: 'source' as keyof Lead,
+      key: 'source',
       header: 'Source',
-      render: (value: string | undefined) => (
+      render: (value: unknown) => (
         <span className="px-2 py-1 bg-neutral-600 text-white rounded-full text-xs">
-          {value || 'Unknown'}
+          {(value as string) || 'Unknown'}
         </span>
       )
     },
     {
-      key: 'status' as keyof Lead,
+      key: 'status',
       header: 'Status',
-      render: (value: string | undefined) => (
+      render: (value: unknown) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           value === 'Active' 
             ? 'bg-success-500 text-white' 
             : 'bg-neutral-600 text-white'
         }`}>
-          {value}
+          {value as string}
         </span>
       )
     },
     {
-      key: 'validation_status' as keyof Lead,
+      key: 'validation_status',
       header: 'Email Status',
-      render: (value: string | undefined) => {
-        if (!value || value === '') {
+      render: (value: unknown) => {
+        const status = value as string | undefined;
+        if (!status || status === '') {
           return (
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-neutral-600 text-white">
               Not Validated
@@ -518,48 +522,51 @@ export default function LeadsPage() {
         
         return (
           <div className="flex items-center space-x-2">
-            {value === 'deliverable' ? (
+            {status === 'deliverable' ? (
               <CheckCircle className="w-4 h-4 text-success-500" />
-            ) : value === 'undeliverable' ? (
+            ) : status === 'undeliverable' ? (
               <AlertCircle className="w-4 h-4 text-error-500" />
             ) : (
               <AlertCircle className="w-4 h-4 text-warning-500" />
             )}
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              value === 'deliverable' ? 'bg-success-500 text-white' :
-              value === 'undeliverable' ? 'bg-error-500 text-white' :
-              value === 'risky' ? 'bg-warning-500 text-white' :
+              status === 'deliverable' ? 'bg-success-500 text-white' :
+              status === 'undeliverable' ? 'bg-error-500 text-white' :
+              status === 'risky' ? 'bg-warning-500 text-white' :
               'bg-neutral-600 text-white'
             }`}>
-              {value.charAt(0).toUpperCase() + value.slice(1)}
+              {status.charAt(0).toUpperCase() + status.slice(1)}
             </span>
           </div>
         );
       }
     },
     {
-      key: 'actions' as keyof Lead,
+      key: 'actions',
       header: 'Actions',
-      render: (value: string | undefined, lead: Lead) => (
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => setEditingLead(lead)}
-            variant="ghost"
-            size="sm"
-            className="p-1 hover:bg-neutral-100"
-            title="Edit lead"
-            icon={<Edit3 className="w-4 h-4 text-neutral-500" />}
-          />
-          <Button
-            onClick={() => handleDeleteLead(lead.lead_id)}
-            variant="ghost"
-            size="sm"
-            className="p-1 hover:bg-error-100"
-            title="Delete lead"
-            icon={<Trash2 className="w-4 h-4 text-error-500" />}
-          />
-        </div>
-      )
+      render: (value: unknown, row: Record<string, unknown>) => {
+        const lead = row as unknown as Lead;
+        return (
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => setEditingLead(lead)}
+              variant="ghost"
+              size="sm"
+              className="p-1 hover:bg-neutral-100"
+              title="Edit lead"
+              icon={<Edit3 className="w-4 h-4 text-neutral-500" />}
+            />
+            <Button
+              onClick={() => handleDeleteLead(lead.lead_id)}
+              variant="ghost"
+              size="sm"
+              className="p-1 hover:bg-error-100"
+              title="Delete lead"
+              icon={<Trash2 className="w-4 h-4 text-error-500" />}
+            />
+          </div>
+        );
+      }
     }
   ];
 
@@ -750,9 +757,8 @@ export default function LeadsPage() {
             {filteredLeads.length > 0 ? (
               <div className="scrollable max-h-96" data-lenis-prevent>
                 <Table
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  columns={columns as any}
-                  data={filteredLeads as unknown as Record<string, unknown>[]}
+                  columns={columns}
+                  data={filteredLeads as unknown as Array<Record<string, unknown>>}
                   className="w-full min-w-max"
                 />
               </div>

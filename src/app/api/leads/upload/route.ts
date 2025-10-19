@@ -1,6 +1,6 @@
 // API route for bulk lead upload from Excel/CSV files
 import { NextRequest, NextResponse } from 'next/server';
-import { googleOAuthDirectService, GoogleSheetsLead } from '@/lib/google-oauth-direct';
+import { googleOAuthDirectService } from '@/lib/google-oauth-direct';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,23 +51,23 @@ export async function POST(request: NextRequest) {
     console.log('Tokens loaded successfully:', tokensLoaded);
 
     // Process and validate leads
-    const processedLeads = leads.map((lead: any, index: number) => {
+    const processedLeads = leads.map((lead: Record<string, unknown>, index: number) => {
       // Start with standard fields
-      const processedLead: any = {
-        lead_id: lead.lead_id || `lead_${project_id}_${Date.now()}_${index}`,
+      const processedLead = {
+        lead_id: (lead.lead_id as string) || `lead_${project_id}_${Date.now()}_${index}`,
         project_id: project_id,
-        name: lead.name || '',
-        email: lead.email || '',
-        company: lead.company || '',
-        position: lead.position || '',
-        source: lead.source || 'Excel Upload',
-        status: lead.status || 'Active',
-        phone: lead.phone || '',
-        website: lead.website || '',
-        address: lead.address || '',
-        rating: lead.rating || '',
-        scraped_at: lead.scraped_at || new Date().toISOString(),
-        error: lead.error || '',
+        name: (lead.name as string) || '',
+        email: (lead.email as string) || '',
+        company: (lead.company as string) || '',
+        position: (lead.position as string) || '',
+        source: (lead.source as string) || 'Excel Upload',
+        status: (lead.status as string) || 'Active',
+        phone: (lead.phone as string) || '',
+        website: (lead.website as string) || '',
+        address: (lead.address as string) || '',
+        rating: (lead.rating as string) || '',
+        scraped_at: (lead.scraped_at as string) || new Date().toISOString(),
+        error: (lead.error as string) || '',
         // Email validation fields (empty for new uploads)
         validation_status: '',
         validation_score: '',

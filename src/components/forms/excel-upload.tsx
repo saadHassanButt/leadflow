@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
-  onUpload: (data: any[]) => Promise<void>;
+  onUpload: (data: Record<string, unknown>[]) => Promise<void>;
   onCancel: () => void;
   projectId: string;
 }
@@ -22,6 +22,8 @@ interface DatabaseColumn {
   description: string;
 }
 
+// Interface for parsed lead data (not currently used but kept for reference)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ParsedLead {
   lead_id: string;
   project_id: string;
@@ -56,8 +58,8 @@ const DATABASE_COLUMNS: DatabaseColumn[] = [
 export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [fullData, setFullData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
+  const [fullData, setFullData] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
@@ -165,7 +167,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       const worksheet = workbook.Sheets[firstSheetName];
       
       // Convert to JSON, skipping the first row (headers)
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
       
       if (jsonData.length < 2) {
         setError('The file appears to be empty or contains only headers');
@@ -174,7 +176,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
 
       // Get headers from first row
       const headers = jsonData[0] as string[];
-      const dataRows = jsonData.slice(1); // Skip header row
+      const dataRows = jsonData.slice(1) as unknown[][]; // Skip header row
 
       console.log('Headers found:', headers);
       console.log('Data rows:', dataRows.length);
@@ -207,11 +209,11 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
   };
 
   // Process data using column mapping
-  const processDataWithMapping = (dataRows: any[], mapping: ColumnMapping) => {
+  const processDataWithMapping = (dataRows: unknown[][], mapping: ColumnMapping) => {
     const mappedData = dataRows
-      .filter((row: any) => row && row.length > 0 && row.some((cell: any) => cell !== null && cell !== undefined && cell !== ''))
-      .map((row: any, index: number) => {
-        const leadData: any = {};
+      .filter((row: unknown[]) => row && row.length > 0 && row.some((cell: unknown) => cell !== null && cell !== undefined && cell !== ''))
+      .map((row: unknown[], index: number) => {
+        const leadData: Record<string, unknown> = {};
         
         // Apply column mapping for standard database fields
         Object.entries(mapping).forEach(([excelColumn, dbColumn]) => {
@@ -252,7 +254,7 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
     setError(null);
   };
 
-  const validateLeads = (leads: any[]) => {
+  const validateLeads = (leads: Record<string, unknown>[]) => {
     let valid = 0;
     let invalid = 0;
     const issues: string[] = [];
@@ -262,29 +264,34 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       let hasIssues = false;
 
       // Check required fields: name, email, company, website
-      if (!lead.name || lead.name.trim() === '') {
+      const name = lead.name as string | undefined;
+      const email = lead.email as string | undefined;
+      const company = lead.company as string | undefined;
+      const website = lead.website as string | undefined;
+
+      if (!name || name.trim() === '') {
         issues.push(`Row ${rowNumber}: Missing name`);
         hasIssues = true;
       }
 
-      if (!lead.email || lead.email.trim() === '') {
+      if (!email || email.trim() === '') {
         issues.push(`Row ${rowNumber}: Missing email`);
         hasIssues = true;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email)) {
-        issues.push(`Row ${rowNumber}: Invalid email format (${lead.email})`);
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        issues.push(`Row ${rowNumber}: Invalid email format (${email})`);
         hasIssues = true;
       }
 
-      if (!lead.company || lead.company.trim() === '') {
+      if (!company || company.trim() === '') {
         issues.push(`Row ${rowNumber}: Missing company`);
         hasIssues = true;
       }
 
-      if (!lead.website || lead.website.trim() === '') {
+      if (!website || website.trim() === '') {
         issues.push(`Row ${rowNumber}: Missing website`);
         hasIssues = true;
-      } else if (lead.website && !/^https?:\/\/.+/.test(lead.website) && !/^www\..+/.test(lead.website) && !/\..+/.test(lead.website)) {
-        issues.push(`Row ${rowNumber}: Invalid website format (${lead.website})`);
+      } else if (website && !/^https?:\/\/.+/.test(website) && !/^www\..+/.test(website) && !/\..+/.test(website)) {
+        issues.push(`Row ${rowNumber}: Invalid website format (${website})`);
         hasIssues = true;
       }
 
@@ -334,8 +341,8 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      const dataRows = jsonData.slice(1);
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
+      const dataRows = jsonData.slice(1) as unknown[][];
 
       processDataWithMapping(dataRows, columnMapping);
     } catch (error) {
@@ -606,10 +613,10 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
               <tbody>
                 {previewData.map((lead, index) => (
                   <tr key={index} className="border-b border-gray-100">
-                    <td className="py-2 px-3 text-gray-900">{lead.name || 'N/A'}</td>
-                    <td className="py-2 px-3 text-gray-900">{lead.email || 'N/A'}</td>
-                    <td className="py-2 px-3 text-gray-900">{lead.company || 'N/A'}</td>
-                    <td className="py-2 px-3 text-gray-900">{lead.position || 'N/A'}</td>
+                    <td className="py-2 px-3 text-gray-900">{(lead.name as string) || 'N/A'}</td>
+                    <td className="py-2 px-3 text-gray-900">{(lead.email as string) || 'N/A'}</td>
+                    <td className="py-2 px-3 text-gray-900">{(lead.company as string) || 'N/A'}</td>
+                    <td className="py-2 px-3 text-gray-900">{(lead.position as string) || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -644,13 +651,13 @@ export function ExcelUpload({ onUpload, onCancel, projectId }: ExcelUploadProps)
           <li>• First row should contain column headers</li>
           <li>• <strong>Required columns:</strong> Name, Email, Company, Website</li>
           <li>• <strong>Optional columns:</strong> Position, Phone, Address, Source, Status, Rating</li>
-          <li>• Column names can be in any order - we'll auto-map them</li>
+          <li>• Column names can be in any order - we&apos;ll auto-map them</li>
           <li>• Supported formats: .xlsx, .xls, .csv</li>
           <li>• Maximum file size: 10MB</li>
         </ul>
         <div className="mt-3 p-3 bg-blue-50 rounded-md">
           <p className="text-xs text-blue-800">
-            <strong>Smart Mapping:</strong> Our system automatically detects common column variations like "Full Name" → Name, "Email Address" → Email, "Organization" → Company, etc. If auto-mapping fails, you'll get a manual mapping interface.
+            <strong>Smart Mapping:</strong> Our system automatically detects common column variations like &quot;Full Name&quot; → Name, &quot;Email Address&quot; → Email, &quot;Organization&quot; → Company, etc. If auto-mapping fails, you&apos;ll get a manual mapping interface.
           </p>
         </div>
       </div>

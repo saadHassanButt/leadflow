@@ -41,6 +41,8 @@ class GoogleOAuthService {
   // Generate JWT token for service account authentication
   private async generateJWT(): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
+    // Payload structure for JWT (currently unused but kept for reference)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payload = {
       iss: SERVICE_ACCOUNT_EMAIL,
       scope: 'https://www.googleapis.com/auth/spreadsheets',
