@@ -39,12 +39,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate file size (10MB limit)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    // Validate file size (20MB limit)
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 10MB
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({
         success: false,
-        error: `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`
+        error: `File size exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`
       }, { status: 400 });
     }
 
