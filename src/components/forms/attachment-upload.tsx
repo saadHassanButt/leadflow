@@ -26,7 +26,7 @@ export function AttachmentUpload({ onUpload, onCancel, templateId, existingAttac
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
   const ALLOWED_TYPES = [
     // Documents
     'application/pdf',
@@ -56,7 +56,7 @@ export function AttachmentUpload({ onUpload, onCancel, templateId, existingAttac
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
-      return `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+      return `File size exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
     }
     
     if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(txt|csv|json|xml)$/i)) {
@@ -266,7 +266,7 @@ export function AttachmentUpload({ onUpload, onCancel, templateId, existingAttac
           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.xml,.jpg,.jpeg,.png,.gif,.webp,.svg,.zip,.rar,.7z"
         />
         <p className="text-xs text-gray-500 mt-2">
-          Maximum file size: 10MB. Supports documents, images, and archives.
+          Maximum file size: 20MB. Supports documents, images, and archives.
         </p>
       </div>
 
